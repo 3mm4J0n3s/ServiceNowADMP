@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>Show the Associated Roles of the selected ADManagerPlus Technician in the Associate User form</description>
+        <media_type/>
+        <name>ADManagerAssociatedRoles</name>
+        <scoped_name>x_manen_admanager_ADManagerAssociatedRoles</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-15 07:00:17</sys_created_on>
+        <sys_id>befee120db8e70105ce09db2ca961973</sys_id>
+        <sys_mod_count>8</sys_mod_count>
+        <sys_name>ADManagerAssociatedRoles</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_macro_befee120db8e70105ce09db2ca961973</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-08-16 14:45:24</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	
+	<!-- Script in x_manen_admanager.ADManagerAssociateUser.jsdbx
+		 Styles in ADManagerAssociateUser in ADManagerAssociateUser.csdbx -->
+	
+	<div id="associated_roles">
+		Associated Roles :
+		<span id="admp_role_name"></span>
+		<span class="roles-popup-container">
+			<a id="more_details">More Details</a>
+			<div class="roles-popup">
+				<table class="roles-popup-table-head">
+					<colgroup>
+						<col style="width:47.5%"/>
+						<col style="width:52.5%"/>
+					</colgroup>
+					<thead>
+						<tr>
+							<td>ROLE NAME</td>
+							<td>DOMAIN NAME</td>
+						</tr>
+					</thead>
+				</table>
+				<div class="scroll-bar">
+					<table class="roles-popup-table-body">
+						<colgroup>
+							<col style="width:47.5%"/>
+							<col style="width:52.5%"/>
+						</colgroup>
+						<tbody id="admp_roles_body">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</span>
+	</div>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

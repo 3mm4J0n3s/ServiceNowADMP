@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description>ADManagerUsersList</description>
+        <direct>false</direct>
+        <endpoint>x_manen_admanager_ADManagerUsersList.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<script src="x_manen_admanager.ADManagerUserListUtil.jsdbx"></script>
+	<script src="x_manen_admanager.JSEncrypt.jsdbx"></script>
+	<script src="x_manen_admanager.CryptoJS.jsdbx"></script>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerFreezeWindow"/>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerConfirmModal"/>
+	
+	<div id="ADUserList" style="display: none;">
+		 <div id="list_nav_aduserlist" class="navbar-default list_nav list_nav_top list_nav_top_border" style="display: block; width: 100%; position: relative;">
+			<div class="container-fluid" aria-expanded="false">
+				<div id="nav_elements" class="nav navbar-right text-align-right">
+					<span>
+						<button id="nav_first" onClick="navigateFirst();" name="vcr_first" data-nav="true" class="list_nav  btn btn-icon h_flip_content tab_button_disabled" title="First page" aria-label="First page"><span class="icon-vcr-left" aria-hidden="true"></span><span class="icon-vcr-left" aria-hidden="true"></span></button>
+						<button id="nav_back" onClick="navigateBack();" data-nav="true" name="vcr_back" class="list_nav  btn btn-icon h_flip_content tab_button_disabled" title="Previous page" aria-label="Previous page" ><span class="icon-vcr-left" aria-hidden="true"></span></button>
+						<div class="vcr_controls">
+							<span class="list_row_number_input">
+								<span id="start_index" style="margin-right: 1px;">0</span>
+								to
+								<span id="end_index" style="margin-left: 1px; margin-right: 1px">0</span>
+								of
+								<span id="total_count" style="margin-left: 1px;">0</span>
+							</span>
+						</div>
+						<button id="nav_next" onClick="navigateNext();" data-nav="true" name="vcr_next" class="list_nav  btn btn-icon h_flip_content tab_button_disabled" title="Next page" aria-label="Next page"><span class="icon-vcr-right" aria-hidden="true"></span></button>
+						<button id="nav_last" onClick="navigateLast();" data-nav="true" name="vcr_last" class="list_nav  btn btn-icon h_flip_content tab_button_disabled" title="Last page" aria-label="Last page"><span class="icon-vcr-right" aria-hidden="true"></span><span class="icon-vcr-right" aria-hidden="true"></span></button>
+					</span>
+				</div>
+			</div>
+		</div>
+		<table id="ADUserListTable" style="width: 100%; margin-bottom: 0px; outline: none;" class="table table-hover">
+			<thead>
+				<tr id="ADUserListHeader">
+					<th></th>
+					<th>Display Name</th>
+					<th>Logon Name</th>
+					<th>Distinguished Name</th>
+					<th>OU Name</th>
+				</tr>
+			</thead>
+			<tbody id="ADUserListBody" class="list2_body" >
+			</tbody>
+		</table>
+	</div>
+</j:jelly>]]></html>
+        <name>ADManagerUsersList</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-04-28 09:44:14</sys_created_on>
+        <sys_id>6754c95bdbde7600360eda11cf96198c</sys_id>
+        <sys_mod_count>28</sys_mod_count>
+        <sys_name>ADManagerUsersList</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_page_6754c95bdbde7600360eda11cf96198c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-08-29 09:32:07</sys_updated_on>
+    </sys_ui_page>
+</record_update>

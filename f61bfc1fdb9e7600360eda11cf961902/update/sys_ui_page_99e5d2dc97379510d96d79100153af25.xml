@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description>ADManager Actions</description>
+        <direct>false</direct>
+        <endpoint>x_manen_admanager_ADManagerActions.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<script src="x_manen_admanager.ADManagerActions.jsdbx"></script>
+	<script src="x_manen_admanager.JSEncrypt.jsdbx"></script>
+	<script src="x_manen_admanager.CryptoJS.jsdbx"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerFreezeWindow"/>
+	<link href="fb35d1f7dbfbfac0360eda11cf961997.cssdbx" rel="stylesheet" type="text/css"/>
+	<body>
+		<div class="actionTable admpActions">
+			<table class="int-table" id="admp_actions_table">
+				<colgroup>
+					<!-- <col width="20px"/> -->
+					<col width="60%"/>
+					<col/>
+				</colgroup>
+				<thead id="admp_actions_table_head">
+					<tr>
+						<!-- <th class="white-th"></th> -->
+						<th>Action Name</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+				<tbody id="admp_actions_table_body">
+				</tbody>
+			</table>
+		</div>
+		<div class="actionForm int-hide admpBack">
+			<div class="int-form-header" id="admp_action_title">
+			</div>
+			<div class="int-form-horizontal int-pl-85">
+				<div class="form-group">
+					<label class="control-label int-make-block int-mb-8">
+						<i class="int-icon icn-mandatory"></i>Action Name
+					</label>
+					<input type="text" class="form-control" id="admp_action_name" disabled="disabled"/>
+				</div>
+				<div class="form-group">
+					<label class="control-label int-make-block int-mb-8">
+						<i class="int-icon icn-mandatory"></i>Description
+					</label>
+					<input type="text" class="form-control" id="admp_action_desc"/>
+				</div>
+				<div class="form-group int-hide createUserSelectFields">
+					<label class="control-label int-make-block int-mb-13" style="margin-bottom: 13px;">
+						<i class="int-icon icn-mandatory"></i>User Creation Fields
+					</label>
+					<div class="doubly-list">
+						<div class="doubly-list-wrapper">
+							<div class="doubly-list-lhs">
+								<h5 class="doubly-header">Available Fields<i class="int-icon icn-refresh int-cursor-pointer sn-tooltip-basic" onclick="refreshUserCreationFormFields();" title="Refresh fields" data-toggle="tooltip" data-placement="right"></i></h5>
+								<div class="doubly-list-box" id="admp_available_fields">
+									<ul>
+										<li>Department</li>
+										<li>Job Title</li>
+										<li>First Name</li>
+										<li>Last Name</li>
+										<li>Logon Name</li>
+										<li>Department</li>
+										<li>Job Title</li>
+										<li>First Name</li>
+										<li>Last Name</li>
+										<li>Logon Name</li>
+										<li>Department</li>
+										<li>Job Title</li>
+										<li>First Name</li>
+										<li>Last Name</li>
+										<li>Logon Name</li>
+										<li>Department</li>
+										<li>Department</li>
+										<li>Department</li>
+									</ul>
+								</div>
+							</div>
+							<div class="doubly-list-holder">
+								<div class="doubly-navigation">
+									<ul>
+										<li class="forward">
+											<i class="int-icon icn-arrow-right"></i>
+										</li>
+										<li class="backward">
+											<i class="int-icon icn-arrow-left"></i>
+										</li>
+									</ul>
+								</div>
+							</div>
+							<div class="doubly-list-rhs">
+								<h5 class="doubly-header">Selected Fields</h5>
+								<div class="doubly-list-box" id="admp_selected_fields">
+									<ul>
+										<li>Department <i class="list-mandatory int-hide">*</i>
+											<span class="setMandatory">
+												Set as Mandatory
+											</span>
+										</li>
+										<li>Job Title <i class="list-mandatory int-hide">*</i>
+											<span class="setMandatory">
+												Set as Mandatory
+											</span>
+										</li>
+										<li>
+											First Name <i class="list-mandatory">*</i>
+											<span class="setMandatory">
+												Remove Mandatory
+											</span>
+										</li>
+										<li>Last Name <i class="list-mandatory int-hide">*</i>
+											<span class="setMandatory">
+												Set as Mandatory
+											</span>
+										</li>
+									</ul>
+								</div>
+							</div>
+							<div class="doubly-list-holder">
+								<div class="doubly-navigation">
+									<ul>
+										<li class="move-up wide-btn">
+											<i class="int-icon icn-arrow-up"></i>
+										</li>
+										<li class="move-down wide-btn">
+											<i class="int-icon icn-arrow-down"></i>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="form-group int-mt-35">
+					<button class="btn btn-primary" onclick="submitEditAction(this);" name="admp_action_submit">Save</button>
+					<button class="btn btn-default int-ml-15" onclick="closeEditAction();" name="admp_action_cancel">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</j:jelly>]]></html>
+        <name>ADManagerActions</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-12 07:25:07</sys_created_on>
+        <sys_id>99e5d2dc97379510d96d79100153af25</sys_id>
+        <sys_mod_count>133</sys_mod_count>
+        <sys_name>ADManagerActions</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_page_99e5d2dc97379510d96d79100153af25</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-01-24 08:37:51</sys_updated_on>
+    </sys_ui_page>
+</record_update>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>ADManager Plus Settings</description>
+        <media_type/>
+        <name>ADManagerSettings</name>
+        <scoped_name>x_manen_admanager_ADManagerSettings</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-26 13:04:18</sys_created_on>
+        <sys_id>1b3b23c8dbda78105ce09db2ca961944</sys_id>
+        <sys_mod_count>8</sys_mod_count>
+        <sys_name>ADManagerSettings</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_macro_1b3b23c8dbda78105ce09db2ca961944</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-09-01 12:14:27</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<div id="admp_settings" tabindex="-1" aria-hidden="true" class="modal" role="dialog">
+		<div class="modal-dialog modal-md">
+			<div class="modal-content">
+				<header class="modal-header">
+					<button data-dismiss="modal" class="btn btn-icon close icon-cross">
+						<span class="sr-only">Close</span>
+					</button>
+					<h4 class="modal-title">ADManager Plus Settings</h4>
+				</header>
+				<div class="modal-body">
+					<div class="popover-body">
+						<div class="row">
+							<label for="admp_form_context_menu" class="pull-left">Enable ADManager Plus Incident Form Context Menu</label> 
+							<div class="input-switch pull-right">
+								<input id="admp_form_context_menu" type="checkbox" name="admp_form_context_menu" onchange="switchFormContextMenu();"/>
+								<label aria-hidden="true" class="switch" for="admp_form_context_menu"></label>
+							</div>
+						</div>
+						<div class="row">
+							<label for="admp_service_catalog" class="pull-left">Enable ADManager Plus Service Catalog</label> 
+							<div class="input-switch pull-right">
+								<input id="admp_service_catalog" type="checkbox" name="admp_service_catalog" onchange="switchServiceCatalog();"/>
+								<label aria-hidden="true" class="switch" for="admp_service_catalog"></label>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager UserList Scripts</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerUserListUtil</name>
+        <script><![CDATA[// --------------------------------------Search User Utils Starts--------------------------------------------------
+var selectedUserList = [];
+function getSelectedUsersList() {
+	return selectedUserList;
+}
+function setSelectedUsersList(usersList) {
+	selectedUserList = usersList;
+}
+function clearSelectedUsersList() {
+	selectedUserList.splice(0, selectedUserList.length);
+}
+
+function loadUserList(userListJSON, selectAll) {
+	var headerHtml = '';
+	headerHtml += '<th></th>';
+	headerHtml += '<th>Display Name</th>';
+	headerHtml += '<th>Logon Name</th>';
+	headerHtml += '<th>Distinguished Name</th>';
+	headerHtml += '<th>OU Name</th>';
+	$j("#ADUserListHeader").html(headerHtml);
+
+	userListJSON = JSON.parse(userListJSON); 
+	$j('#start_index').html(userListJSON.startIndex);
+	$j('#end_index').html(userListJSON.endIndex);
+	$j('#total_count').html(userListJSON.count);
+	var UsersList = userListJSON.UsersList;
+
+	var html = '';
+	if(UsersList.length > 0) {
+		for(var i = 0; i < UsersList.length; i++) {
+			var displayName = UsersList[i].DISPLAY_NAME? UsersList[i].DISPLAY_NAME: '-';
+			var logonName = UsersList[i].LOGON_NAME? UsersList[i].LOGON_NAME: '-';
+			if(logonName == '-') logonName = UsersList[i].userPrincipalName? UsersList[i].userPrincipalName: '-';
+			var distinguishedName = UsersList[i].DISTINGUISHED_NAME? UsersList[i].DISTINGUISHED_NAME: '-';
+			if(distinguishedName == '-') distinguishedName = UsersList[i].distinguishedName? UsersList[i].distinguishedName: '-';
+			var ouName = UsersList[i].OU_NAME? UsersList[i].OU_NAME: '-';
+			var sid = UsersList[i].SID_STRING? UsersList[i].SID_STRING: UsersList[i].objectSID;
+			var sAMAccountName = UsersList[i].SAM_ACCOUNT_NAME? UsersList[i].SAM_ACCOUNT_NAME: UsersList[i].sAMAccountName;
+			var objectGUID = UsersList[i].OBJECT_GUID? UsersList[i].OBJECT_GUID: UsersList[i].objectGUID;
+			var isChecked = (selectAll || isUserSelected(objectGUID))? 'checked': '';
+
+			if(i % 2 ==1) html += '<tr class="list_row list_odd">';
+			else html += '<tr class="list_row list_even">';
+
+			html += '<td class="list_decoration_cell col-control col-small col-center" rowspan="1" scope="row"><span class="input-group-radio"><input data-logon_name="' + escapeHtml(logonName) + '" data-samaccountname="' + escapeHtml(sAMAccountName) + '" data-sid="' + escapeHtml(sid) + '" data-distinguishedname="' + escapeHtml(distinguishedName) + '" data-displayname="' + escapeHtml(displayName) + '" data-ouname="' + escapeHtml(ouName) + '" name="check_aduser" id="check_aduserlist_' + escapeHtml(objectGUID) + '" data-type="list2_checkbox" type="radio" class="radio"  value=' + escapeHtml(objectGUID) + ' ' + isChecked + '  onclick="selectUser(this);"></input><label for="check_aduserlist_'+escapeHtml(objectGUID)+'" class="radio-label"></label></span></td>';
+
+			html += '<td class="vt vt-spacer">' + escapeHtml(displayName) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(logonName) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(distinguishedName) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(ouName) + '</td>';
+			html += '</tr>';
+		}
+		showSubmitButton(true);
+	}
+	else {
+		$j('#start_index').html(0);
+		$j('#end_index').html(0);
+		$j('#total_count').html(0);
+		html += '<tr class="list2_no_records"><td colspan="5">No records to display</td></tr>';
+		showSubmitButton(false);
+	}
+
+	$j("#ADUserListBody").html(html);
+	showADUsersList(true); 
+}
+
+function checkEmptyFields(domainName, searchText) {
+	var emptyFieldsStr = '';
+	if(domainName.trim() == '') emptyFieldsStr += ' Select Domain;';
+	if(searchText.trim() == '') emptyFieldsStr += ' User Name;';
+	return emptyFieldsStr;
+}
+
+var oldSearchText = '';
+function getSearchText() {
+	return oldSearchText;
+}
+
+function searchUsers(startIndex, range) {
+	g_form.clearMessages();
+	scrollToTop();
+	var domainName = g_form.getValue('Select_Domain');
+	var searchText = g_form.getValue('Name').trim();
+	searchText = searchText.replace(/\\/g, '\\\\');
+
+	if(startIndex && range) {
+		searchText = oldSearchText;
+	}
+
+	var emptyFieldsStr = checkEmptyFields(domainName, searchText);
+	if(emptyFieldsStr != '' && !startIndex && !range) {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+
+	if(!startIndex && !range) {
+		clearSelectedUsersList();
+	}
+	if(!startIndex) startIndex = 1;
+	if(!range) range = 20;
+
+	var gURL = new GlideURL();
+	gURL.setFromCurrent();
+	var parent = gURL.getParam('parent');
+
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var userDetailsAjax = new GlideAjax("ADManagerUserListHandler");
+	userDetailsAjax.addParam("sysparm_name", "getADUsersList");
+	userDetailsAjax.addParam("domainName", domainName);
+	userDetailsAjax.addParam("searchText", searchText);
+	userDetailsAjax.addParam("startIndex", startIndex);
+	userDetailsAjax.addParam("range", range);
+	userDetailsAjax.addParam("buildNumber", getBuildNumber());
+	userDetailsAjax.addParam("encryptedAuthToken", getEncryptedAuthToken());
+	if(!(parent && (parent == 'module' || parent == 'menu') && g_user.hasRole('x_manen_admanager.admanager_admin')) && g_user.hasRole('x_manen_admanager.admanager_requester')) {
+		userDetailsAjax.addParam("is_requester", "true");
+	}
+	userDetailsAjax.getXMLAnswer(userDetailsResponse);
+
+	function userDetailsResponse(userDetails) {
+		freezeWindow(false);
+		var result = userDetails.evalJSON(); 
+		if(result.status == 'true') {
+			oldSearchText = searchText;
+			loadUserList(userDetails, false);
+		}
+	}
+}
+
+function hideUsersList() {
+	$j("#ADUserList").hide();
+}
+function showUsersList() {
+	$j("#ADUserList").show();
+}
+
+function showADUsersList(isShow) {
+	if(isShow == true) {
+		$j("#ADUserList").show();
+	} else if(isShow == false) {
+		$j("#ADUserList").hide();
+	}
+}
+
+function navigateFirst() {
+	var StartIndex = parseInt($j('#start_index').html());
+	if(StartIndex > 20) searchUsers(1, 20);
+}
+
+function navigateBack() {
+	var total_count = parseInt($j('#total_count').html());
+	var StartIndex = parseInt($j('#start_index').html());
+
+	if(StartIndex - 20 >= 1) searchUsers(StartIndex - 20, 20);
+}
+
+function navigateNext() {
+	var total_count = parseInt($j('#total_count').html());
+	var StartIndex = parseInt($j('#start_index').html());
+
+	if(StartIndex + 20 <= total_count) searchUsers(StartIndex + 20, 20);
+}
+
+function navigateLast() {
+	var total_count = parseInt($j('#total_count').html());
+	var StartIndex = parseInt($j('#start_index').html());
+
+	if(StartIndex + 20 <= total_count) {
+		var startIndex = 1;
+		if(total_count % 20 == 0) startIndex = total_count - 19;
+		else startIndex = total_count - (total_count % 20) + 1;
+		searchUsers(startIndex, 20);
+	}
+}
+
+function selectUser(element) {
+	var checkBoxCheckedStatus = $j(element).prop("checked");
+	if(checkBoxCheckedStatus) addUser(element);
+	// 	else removeUser(element);
+}
+
+function addUser(element) {
+	// Currently one user at a time 
+	selectedUserList.splice(0, 1);
+	var userDetails = {};
+	userDetails.DISPLAY_NAME = $j(element).data('displayname');
+	userDetails.userPrincipalName = $j(element).data('logon_name');
+	userDetails.sAMAccountName = $j(element).data('samaccountname');
+	userDetails.objectSID = $j(element).data('sid');
+	userDetails.distinguishedName = $j(element).data('distinguishedname');
+	userDetails.objectGUID = element.value;
+	userDetails.OU_NAME = $j(element).data('ouname');
+	selectedUserList.push(userDetails);
+}
+
+// function removeUser(element) {
+// 	for(var i = 0; i < selectedUserList.length; i++) {
+// 		if(selectedUserList[i].objectGUID == element.value) selectedUserList.splice(i, 1);
+// 	}
+// }
+
+function isUserSelected(guid) {	
+	for(var i = 0; i < selectedUserList.length; i++) {
+		if(selectedUserList[i].objectGUID == guid) return true;
+	}
+	return false;
+}
+
+function isADUserListVisible() {
+	if (($j("#ADUserList").css('display') == 'none')) return false;
+	else return true;
+}
+// --------------------------------------Search User Utils Ends--------------------------------------------------
+// --------------------------------------Submit Management Actions Utils Starts--------------------------------------------------
+function isFormFilled() {
+	if(g_form.getValue('Name') && g_form.getValue('Name').trim() != '') {
+		return true;
+	}
+	if(g_form.getValue('Password') && g_form.getValue('Password') != '') {
+		return true;
+	}
+	if($j.isFunction(window['getAddGroups']) && getAddGroups().length > 0) {
+		return true;
+	}	
+	if($j.isFunction(window['getRemoveGroups']) && getRemoveGroups().length > 0) {
+		return true;
+	}
+	if($j.isFunction(window['getPrimaryGroup']) && getPrimaryGroup().primaryGroupName != null) {
+		return true;
+	}
+	if ($j("#clearAllGroupMembership") && $j("#clearAllGroupMembership").prop("checked")) {
+		return true;
+	}
+	if($j.isFunction(window['isADUserListVisible']) && isADUserListVisible()) {
+		return true;
+	}
+	return false;
+}
+
+function emptyAllFields() {
+	showADUsersList(false);
+	showSubmitButton(false);
+	g_form.clearValue('Name');
+	g_form.clearValue('Password');
+	clearSelectedUsersList();
+	if($j.isFunction(window['setAddGroups'])) setAddGroups([]);
+	if($j.isFunction(window['setRemoveGroups'])) setRemoveGroups([]);
+	if($j.isFunction(window['setPrimaryGroup'])) setPrimaryGroup({});
+	if($j.isFunction(window['toggleRemoveGroupsField'])) {
+		$j("#clearAllGroupMembership").prop('checked', false);
+		toggleRemoveGroupsField(false);
+	}
+	if($j.isFunction(window['slidUpGroupsList'])) slidUpGroupsList();
+}
+
+function updateStatus(statusArray) {
+	clearSelectedUsersList(); // clear userlist on success
+	showSubmitButton(false);
+
+	var headerHtml = '';
+	headerHtml += '<th> sAMAccountName </th>';
+	headerHtml += '<th > Logon Name </th>';
+	headerHtml += '<th > Status Message </th>';
+	$j("#ADUserListHeader").html(headerHtml);
+
+	var count = statusArray.length;
+	$j('#start_index').html(1);
+	$j('#end_index').html(count);
+	$j('#total_count').html(count);
+
+	var html = '';
+	for(var i = 0; i < count; i++) {
+		var logonName = statusArray[i].LOGON_NAME? statusArray[i].LOGON_NAME: '-';
+		var sAMAccountName = statusArray[i].sAMAccountName? statusArray[i].sAMAccountName: '-';
+		var statusMessage = statusArray[i].statusMessage? statusArray[i].statusMessage: '-';
+
+		if(i % 2 == 1) html += '<tr class="list_row list_odd" style="height: 20px;">';
+		else html += '<tr class="list_row list_even" style="height: 20px;">';
+
+		html += '<td class="vt vt-spacer">' + escapeHtml(sAMAccountName) + '</td>';
+		html += '<td class="vt vt-spacer">' + escapeHtml(logonName) + '</td>';
+		html += '<td class="vt vt-spacer">' + escapeHtml(statusMessage) + '</td>';
+		html += '</tr>';
+	}
+	$j("#ADUserListBody").html(html);
+}
+// --------------------------------------Submit Management Actions Utils Starts--------------------------------------------------
+// --------------------------------------Record Producer Utils Starts--------------------------------------------------
+function hideRecordProducerDefaultBtns(recordProducer) {
+	g_form.clearMessages();
+	g_form.disableAttachments();
+	g_form.getElement('back_button_in_header').style.display = 'none'; //back button
+	g_form.getElement('sc_attachment_button').style.display = 'none'; //attachment button
+	$j(".btn.btn-icon.icon-ellipsis").hide(); //more options button
+	g_form.getElement('submit_button').style.display = 'none'; //submit button
+	// 	$j(".pointerhand.icon-stop-watch.btn.btn-icon").hide(); //response time button
+	var showButton = '';
+	if(recordProducer == 'create_user') {
+		g_form.setDisplay('manager_field', false);
+		g_form.setDisplay('createuserform', false); // hide create user form
+		showButton = document.getElementById("show_button.IO:865aa35edbd6f0105ce09db2ca96194b");
+		if(showButton) showButton.remove();
+	}
+	if(recordProducer == 'reset_password') {
+		showButton = document.getElementById("show_button.IO:dca74a56db92f0105ce09db2ca961958");
+		if(showButton) showButton.remove();
+	}
+	if(recordProducer == 'add_to_group') {
+		g_form.setDisplay('addToGroupPage', false);
+	}
+	if(recordProducer == 'remove_from_group') {
+		g_form.setDisplay('removeFromGroup', false);
+	}
+	if(recordProducer == 'folder_permissions') {
+		g_form.setDisplay('SetFolderPermissionsPage', false);
+		g_form.setDisplay('SetFolderPermissionsAdvanced', false);
+	}
+	if(recordProducer == 'modify_manager') {
+		g_form.setDisplay('manager_field', false);
+		$j('#manager_label').text("Select Manager");
+	}
+}
+
+function setRecordProducerVar(fieldArray, show, enable) {
+	fieldArray.forEach(function(field) {
+		g_form.setDisplay(field.name, show); //show or hide field
+		g_form.setReadOnly(field.name, !enable); //enable or disable field
+		g_form.getElement(field.name).style.backgroundColor = (!enable)? '#f4f4f4': '#fff'; //manipulate the background color of field
+		g_form.getElement(field.name).style.border = (!enable)? '1px solid #ddd' :'1px solid #bec1c6'; //manipulate the border color of field
+		if(field.type == 'input') {
+			g_form.clearValue(field.name); //clear value if type is input
+		} else if(field.type == 'select') {
+			g_form.clearOptions(field.name); //clear options if type is select
+		}
+	});
+}
+
+function getAdmpLocation(parent, sys_id) {
+	var admpLocation = '';
+	if(parent && parent == 'module' && g_user.hasRole('x_manen_admanager.admanager_admin')) {
+		admpLocation = "module";
+	} else if(parent && parent == 'menu' && sys_id != null && sys_id != '' && g_user.hasRole('x_manen_admanager.admanager_admin')) {
+		admpLocation = "menu";
+	} else if(g_user.hasRole('x_manen_admanager.admanager_requester')) {
+		admpLocation = "catalog";
+	}
+	setLocation(admpLocation);
+	return admpLocation;
+}
+
+function setPageTitle(parent) {
+	if(parent == '' || parent == 'catalog') {
+		g_form.getElement('back_button_in_header').style.display = 'block'; // back button show
+	} else if(parent == 'module') {
+		$j("tr.header.sc_header td.sc_header_main_cell ul.breadcrumb.sc_breadcrumb li:not(:last-child)").detach(); // edit title
+		document.getElementsByClassName('guide_tray')[0].style.display = "none"; // short description hide
+	} else if(parent == 'menu') {
+		g_form.getElement('back_button_in_header').style.display = 'block'; // back button show
+		$j("tr.header.sc_header td.sc_header_main_cell ul.breadcrumb.sc_breadcrumb li:not(:last-child)").detach(); // edit title
+		document.getElementsByClassName('guide_tray')[0].style.display = "none"; // short description hide
+	}
+}
+
+function showRecordProducerVariable(isShow, name, type) {
+	if(type == 'input') {
+		// 		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearValue(name);
+	} else if(type == 'select') {
+		// 		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearOptions(name);
+	}
+}
+
+function enableRecordProducerVariable(isEnable, name, type) {
+	// 	g_form.setMandatory(name, isEnable);
+	g_form.setReadOnly(name, !isEnable);
+
+	g_form.getElement(name).style.backgroundColor = (!isEnable)? '#f4f4f4': '#fff';
+	g_form.getElement(name).style.border = (!isEnable)? '1px solid #ddd' :'1px solid #bec1c6';
+}
+
+function setInitialPageTitle(parent, sys_id) {
+	if(parent && parent == 'module' && g_user.hasRole('x_manen_admanager.admanager_admin')) {
+		setPageTitle('module');
+	} else if(parent && parent == 'menu' && sys_id != null && sys_id != '' && g_user.hasRole('x_manen_admanager.admanager_admin')) {
+		setPageTitle('menu');
+	} else if(g_user.hasRole('x_manen_admanager.admanager_requester')) {
+		setPageTitle('');
+	}
+}
+// --------------------------------------Record Producer Utils Ends------------------------------------------------
+// --------------------------------------Security Enhancement Utils Starts------------------------------------------------
+var admpGlobal = {
+	location : null,
+	buildNumber : null,
+	encryptedAuthToken: null,
+	fieldsList: null,
+	formData: null,
+};
+function getLocation() {
+	return admpGlobal.location;
+}
+function setLocation(location) {
+	admpGlobal.location = location;
+}
+function getFormData() {
+	return admpGlobal.formData;
+}
+function setFormData(formData) {
+	admpGlobal.formData = formData;
+}
+function getBuildNumber() {
+	return admpGlobal.buildNumber;
+}
+function setBuildNumber(buildNumber) {
+	admpGlobal.buildNumber = buildNumber;
+}
+function getEncryptedAuthToken() {
+	return admpGlobal.encryptedAuthToken;
+}
+function setEncryptedAuthToken(encryptedAuthToken) {
+	admpGlobal.encryptedAuthToken = encryptedAuthToken;
+}
+function getFieldsList() {
+	return admpGlobal.fieldsList;
+}
+function setFieldsList(fieldsList) {
+	admpGlobal.fieldsList = fieldsList;
+}
+
+function encryptAuthtoken(authToken, key) {
+	var encryptedMessage = CryptoJS.AES.encrypt(authToken, key);
+	return encryptedMessage.toString();
+}
+
+function decryptAuthtoken(encryptedAuthToken, key) {
+	var decryptedMessage = CryptoJS.AES.decrypt(encryptedAuthToken, key);
+	return decryptedMessage.toString(CryptoJS.enc.Utf8);
+}
+
+function encryptAuthtokenWithPublicKey(authToken, publicKey) {
+	var jsEncryptObj = new JSEncrypt();
+	jsEncryptObj.setPublicKey(publicKey);
+	var encryptedAuthToken = jsEncryptObj.encrypt(authToken);
+	return encryptedAuthToken;
+}
+
+function checkIfValidUUID(str, encryptAllAuthTokens) {
+	// Regular expression to check if string is a valid UUID
+	var regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+	var isValidUUID = regexExp.test(str);
+	if(isValidUUID && encryptAllAuthTokens) {
+		getAndEncryptAllAuthTokens();
+	}
+	return isValidUUID;
+}
+
+function getAndEncryptAllAuthTokens() {
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAllAuthTokens");
+	configurationHandler.getXMLAnswer(getAllAuthTokens);
+	function getAllAuthTokens(response) {
+		response = JSON.parse(response);
+		var configurationObject = response.configurationObject;
+		for(var i = 0; i < configurationObject.length; i++) {
+			configurationObject[i].encryptedAuthToken = encryptAuthtoken(configurationObject[i].authtoken, configurationObject[i].key);
+		}
+		var associationObject = response.associationObject;
+		for(var j = 0; j < associationObject.length; j++) {
+			associationObject[j].encryptedAuthToken = encryptAuthtoken(associationObject[j].authtoken, associationObject[j].key);
+		}
+		var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+		configurationHandler.addParam("sysparm_name","encryptAllAuthTokens");
+		configurationHandler.addParam("response",  JSON.stringify(response));
+		configurationHandler.getXMLAnswer(encryptAllAuthTokens);
+		function encryptAllAuthTokens(response) {
+		}
+	}
+}
+// --------------------------------------Security Enhancement Utils Ends------------------------------------------------
+// --------------------------------------Common Utils Starts------------------------------------------------
+function scrollToTop() {
+	$j('html,body').animate({scrollTop:0},0);
+}
+
+function escapeHtml(str) {
+	return String(str).replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+		return '&#'+i.charCodeAt(0)+';';
+	});
+}
+
+function showConfirmModal(title, message, yesCallBack, noCallBack) {
+	$j("#admp_confirm_modal_title").text(title);
+	$j("#admp_confirm_modal_message").text(message);
+	$j("#admp_confirm_modal_yes").text('Yes');
+	$j("#admp_confirm_modal_no").text('No');
+	$j("#admp_confirm_modal_yes").off('click');
+	$j("#admp_confirm_modal_yes").on('click', yesCallBack);
+	$j("#admp_confirm_modal_no").off('click');
+	$j("#admp_confirm_modal_no").on('click', noCallBack);
+
+	$j('#admp_confirm_modal').modal('toggle');
+}
+
+
+// --------------------------------------Common Utils Ends------------------------------------------------
+]]></script>
+        <script_name>ADManagerUserListUtil</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-07-14 06:23:23</sys_created_on>
+        <sys_id>1858bc84db000fc0360eda11cf9619b5</sys_id>
+        <sys_mod_count>125</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerUserListUtil</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_1858bc84db000fc0360eda11cf9619b5</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-04-20 09:51:59</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

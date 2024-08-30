@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerFileServerHandler</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description> ADManagerFileServerHandler</description>
+        <name>ADManagerFileServerHandler</name>
+        <script><![CDATA[var ADManagerFileServerHandler = Class.create();
+ADManagerFileServerHandler.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	getFolderList: function() {
+		var resultJSON = {};
+		var searchText = this.getParameter('searchText');
+		var startIndex = this.getParameter('startIndex');
+		var folderPath = this.getParameter('folderPath');
+		var range = this.getParameter('range');
+		var is_requester = this.getParameter('is_requester');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		var responseJSON = this.doFolderListPost(startIndex, range, searchText, folderPath, is_requester, buildNumber, encryptedAuthToken);
+		responseJSON = new global.JSON().decode(responseJSON);
+		
+		if(responseJSON.status == 'true') {
+			var folderListJSON =  new global.JSON().decode(responseJSON.responseBody);
+			var count = folderListJSON.FOLDER_COUNT;
+			var folderList = folderListJSON.FOLDER_LIST;
+
+			resultJSON.count = count;
+			resultJSON.startIndex = startIndex;
+			var endIndex = parseInt(startIndex)+parseInt(range)-1;
+			resultJSON.endIndex = (endIndex<=count)?endIndex:count;
+			resultJSON.folderList = folderList;
+			resultJSON.status = 'true';
+		} 
+		else {
+			resultJSON.status = 'false';
+			if(responseJSON.statusMessage != null && responseJSON.statusMessage != "")
+				resultJSON.responseBody = responseJSON.statusMessage;
+			else
+			resultJSON.responseBody = responseJSON.responseBody;
+		}
+		return new global.JSON().encode(resultJSON);
+	},
+	/* Fetch File Servers from ADManager
+	 * Params : startIndex, range, searchText, folderPath
+	 */
+	doFolderListPost: function(startIndex, range, searchText, folderPath, is_requester, buildNumber, encryptedAuthToken) {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		
+		// allow servicenow users to perform read operations with admin authtoken, if requester role
+		if(is_requester == 'true') {
+			authToken = new ADManagerConfigurationHandler().getAdminAuthToken();
+		}
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			sm = new sn_ws.RESTMessageV2("ADManagerFSMFolderList", "post");
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('AuthToken', authToken);  
+			sm.setStringParameter('range', range);
+			sm.setStringParameter('start', startIndex);
+			sm.setStringParameterNoEscape('search', searchText);
+			sm.setStringParameterNoEscape('path', folderPath);
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+			
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch(ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody():null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if(responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+	getFileServerAccountList: function() {
+		var resultJSON = {};
+		var searchText = this.getParameter('searchText');
+		var startIndex = this.getParameter('startIndex');
+		var folderPath = this.getParameter('folderPath');
+		var range = this.getParameter('range');
+		var is_requester = this.getParameter('is_requester');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		var responseJSON = this.doAccountListPost(startIndex, range, searchText, folderPath, is_requester, buildNumber, encryptedAuthToken);
+		responseJSON = new global.JSON().decode(responseJSON);
+		
+		if(responseJSON.status == 'true') {
+			var folderListJSON =  new global.JSON().decode(responseJSON.responseBody);
+			var count = folderListJSON.count;
+			var folderList = folderListJSON.GroupList;
+
+			resultJSON.count = count;
+			resultJSON.startIndex = startIndex;
+			var endIndex = parseInt(startIndex)+parseInt(range)-1;
+			resultJSON.endIndex = (endIndex<=count)?endIndex:count;
+			resultJSON.folderList = folderList;
+			resultJSON.status = 'true';
+		} 
+		else {
+			resultJSON.status = 'false';
+			resultJSON.responseBody = responseJSON.responseBody;
+		}
+		return new global.JSON().encode(resultJSON);
+	},
+	/* Fetch File Servers from ADManager
+	 * Params : startIndex, range, searchText, folderPath
+	 */
+	doAccountListPost: function(startIndex, range, searchText, folderPath, is_requester, buildNumber, encryptedAuthToken) {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		
+		// allow servicenow users to perform read operations with admin authtoken, if requester role
+		if(is_requester == 'true') {
+			authToken = new ADManagerConfigurationHandler().getAdminAuthToken();
+		}
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			sm = new sn_ws.RESTMessageV2("ADManagerADGroupList", "post");
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('AuthToken', authToken);  
+			sm.setStringParameter('range', range);
+			sm.setStringParameter('startIndex', startIndex);
+			sm.setStringParameterNoEscape('searchText', searchText);
+			if(folderPath != "") {
+				sm.setStringParameter('folderPath', folderPath);
+			}
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+			
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch(ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody():null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if(responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+	getPermissionList: function() {
+		var resultJSON = {};
+		var basicPermissionList = [];
+		var advPermissionList = [];
+		var selectList = {};
+		var unSelectList = {};
+		
+		var detailsRecord = new GlideRecord('x_manen_admanager_admanageraccessmasks');
+		detailsRecord.orderBy('priority');
+		detailsRecord.query();
+		if(!(detailsRecord.hasNext())) {
+			this.initPermisions();
+			detailsRecord = new GlideRecord('x_manen_admanager_admanageraccessmasks');
+			detailsRecord.orderBy('priority');
+			detailsRecord.query();
+		}
+		while(detailsRecord.next()) {
+			var permissionDetails = {};
+			
+			permissionDetails.ACCESS_MASK_ID =  detailsRecord.access_mask_id.toString();
+			permissionDetails.ACCESS_MASK_STRING = detailsRecord.access_mask_string.toString();
+			if(detailsRecord.is_advanced_permission)
+			{
+				advPermissionList.push(permissionDetails);
+			}
+			else
+			{
+				basicPermissionList.push(permissionDetails);
+			}
+			
+			var permissionId = detailsRecord.access_mask_id;
+			var mappingRecord = new GlideRecord('x_manen_admanager_admanageraccessmaskmapping');
+			mappingRecord.addQuery('access_mask_id', permissionId);
+			mappingRecord.query();
+			var onSelectArray = [];
+			var onUnSelectArray = [];
+			
+			while(mappingRecord.next())
+			{
+				var mappingType = mappingRecord.mapping_type;
+				var childMask = mappingRecord.child_access_mask.toString();				
+				if(mappingType == 1 || mappingType == 3)
+				{
+					onSelectArray.push(childMask);
+				}
+				if(mappingType == 2 || mappingType == 3)
+				{
+					onUnSelectArray.push(childMask);
+				}
+			}
+			selectList[permissionId] = onSelectArray;
+			unSelectList[permissionId] = onUnSelectArray;	
+		}
+		resultJSON.basicPermissionList = basicPermissionList;
+		resultJSON.advPermissionList = advPermissionList;
+		resultJSON.onSelect = selectList;
+		resultJSON.onUnSelect = unSelectList;
+		return new global.JSON().encode(resultJSON);
+	},
+	getPermissionListFromProperty: function() {
+		var permissionList = gs.getProperty('x_manen_admanager.ADSMNTFSSetPermissions');
+		return permissionList; 
+	},
+	initPermisions: function()
+	{
+		var maskMappingString = '[]';
+		var maskArrayString = '[]';
+		var mappingRecord = new GlideRecord('sys_properties');
+		mappingRecord.addQuery('name', 'x_manen_admanager.ADSMAccessMaskMapping');
+		mappingRecord.query();
+		if(mappingRecord.next())
+			maskMappingString = mappingRecord.value;
+		
+		mappingRecord = new GlideRecord('sys_properties');
+		mappingRecord.addQuery('name', 'x_manen_admanager.ADSMAccessMasks');
+		mappingRecord.query();
+		if(mappingRecord.next())
+			maskArrayString = mappingRecord.value;
+		
+		var accessMask = new global.JSON().decode(maskArrayString);
+		var accessMaskMapping = new global.JSON().decode(maskMappingString);
+
+		for(var i=0; i<accessMask.length; i++)
+		{
+			var maskDetails = accessMask[i];
+			var accessMaskRecord = new GlideRecord('x_manen_admanager_admanageraccessmasks');
+			accessMaskRecord.initialize(); 
+			accessMaskRecord.access_mask_id = maskDetails.access_mask_id;
+			accessMaskRecord.access_mask_string = maskDetails.access_mask_string;
+			accessMaskRecord.is_advanced_permission = maskDetails.is_advanced_permission;
+			accessMaskRecord.priority = maskDetails.priority;
+			accessMaskRecord.insert();
+		}
+		for(var j=0; j<accessMaskMapping.length; j++)
+		{
+			var maskDetails = accessMaskMapping[j];
+			var accessMaskRecord = new GlideRecord('x_manen_admanager_admanageraccessmaskmapping');
+			accessMaskRecord.initialize(); 
+			accessMaskRecord.access_mask_id = maskDetails.access_mask_id;
+			accessMaskRecord.child_access_mask = maskDetails.child_access_mask;
+			accessMaskRecord.mapping_type = maskDetails.mapping_type;
+			accessMaskRecord.insert();
+		}
+	},
+    type: 'ADManagerFileServerHandler'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-10-05 10:02:49</sys_created_on>
+        <sys_id>7373f894db8d6f40360eda11cf9619fb</sys_id>
+        <sys_mod_count>41</sys_mod_count>
+        <sys_name>ADManagerFileServerHandler</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_7373f894db8d6f40360eda11cf9619fb</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-22 07:27:30</sys_updated_on>
+    </sys_script_include>
+</record_update>

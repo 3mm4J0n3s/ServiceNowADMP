@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager Remove From Group Common client Scripts</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerRemoveFromGro</name>
+        <script><![CDATA[var removeGroups = [];
+var objectType = 'User';
+function openGroupListPopup(groupListType) {
+	slidUpGroupsList();
+	var selectedGroups =  removeGroups;
+	var dialog = new GlideDialogWindow("x_manen_admanager_ADManagerGroupList");   
+	dialog.setTitle("Select Group");   
+	dialog.setSize(750,400);
+	dialog.setPreference("domainName", g_form.getValue('Select_Domain'));
+	dialog.setPreference("groupListType", groupListType);
+	dialog.setPreference("selectedGroups", selectedGroups);
+	dialog.render();   
+}
+function updateForm() {
+	$j("#removeFromGroupInput").val(removeGroups.length>0?removeGroups.length>1?removeGroups[0].groupName+', ...':removeGroups[0].groupName:'');
+}
+function showRemoveFromGroupList() {
+	if (($j("#removeFromGroupList").css('display') === 'none')) {
+		updateRemoveFromGroupsList();
+		$j("#removeFromGroupList").slideDown("slow");
+		$j("#addToGroupList").slideUp("slow");
+	}
+	else {
+		$j("#removeFromGroupList").slideUp("slow");
+	}
+}
+function updateRemoveFromGroupsList() {
+	var selectedGroupsHtml = '';
+	if(removeGroups == 0) {
+		selectedGroupsHtml = '<tr><td style="padding-top: 30px;"><span style="display:block; text-align:center; margin:0 auto;">No records to display</span></td></tr>';
+	}
+
+	for(var i=0; i<removeGroups.length;i++) {
+		selectedGroupsHtml += '<tr style="margin-left:5px;"><td style="height:20px;width:90%; ">'+escapeHtml(removeGroups[i].groupName)+'</td><td style="width:10%;"><button onclick="removeGroupFromList(this);"  value="'+escapeHtml(removeGroups[i].groupName)+'" type="button" class="equalButton" style="padding: 0;border: none;"><img   src="xbutton.png"  width="8" height="8"></img></button></td></tr>';
+	}
+	
+	$j("#removeFromGroupListBody").html(selectedGroupsHtml);
+	$j("#removeFromGroupInput").val(removeGroups.length>0?removeGroups.length>1?removeGroups[0].groupName+', ...':removeGroups[0].groupName:'');
+}
+function removeGroupFromList(obj) {
+	for(var j=0; j<removeGroups.length; j++) {			
+		if(removeGroups[j].groupName == $j(obj).val()) {
+			removeGroups.splice(j, 1);
+			updateRemoveFromGroupsList();
+		}
+	}
+}
+function slidUpGroupsList() {
+	$j("#removeFromGroupList").slideUp( "slow" );
+}
+function setRemoveGroups(groups) {
+	removeGroups = groups;
+	updateForm();
+}
+function setObjectType(type) {
+	objectType = type;
+}
+function getRemoveGroups() {
+	if(isRemoveFromAllGroup()) return [];
+	return removeGroups;
+}
+function getObjectType() {
+	return objectType;
+}
+function isRemoveFromAllGroup() {
+	return $j("#clearAllGroupMembership").prop("checked");
+}
+function clearAllGroupMembershipClicked(element) {
+	toggleRemoveGroupsField(element.checked); 
+}
+function toggleRemoveGroupsField(isRemoveFromAllGroups) {
+	if(isRemoveFromAllGroups) {
+		$j("#clearAllGroupMembership").prop('checked', true);
+		$j("#editAddGroupButton").hide();
+		$j("#addGroupButton").hide();
+		$j("#removeFromGroupDiv").hide();
+	}
+	else {
+		$j("#clearAllGroupMembership").prop('checked', false);
+		$j("#editAddGroupButton").show();
+		$j("#addGroupButton").show();
+		$j("#removeFromGroupDiv").show();
+	}
+	slidUpGroupsList();
+}
+function showRemoveFromGroupVariable(isShow) {
+	if(isShow == true) {
+		$j("#Remove_from_Group").show();
+	} else {
+		$j("#Remove_from_Group").hide();
+	}
+}
+function disableButtons() {
+	$j('#editAddGroupButton').prop('disabled', true);
+	$j('#addGroupButton').prop('disabled', true);
+	$j('#clearAllGroupMembership').prop('disabled', true);
+	
+	document.getElementById('removeFromGroupInput').style.backgroundColor = '#f4f4f4';
+	document.getElementById('removeFromGroupInput').style.border = '1px solid #ddd';
+	
+	document.getElementById('editAddGroupButton').style.backgroundColor = '#f4f4f4';
+	document.getElementById('editAddGroupButton').style.border = '1px solid #ddd';
+	
+	document.getElementById('addGroupButton').style.backgroundColor = '#f4f4f4';
+	document.getElementById('addGroupButton').style.border = '1px solid #ddd';
+	
+}
+function escapeHtml(str) {
+	return String(str).replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+		return '&#'+i.charCodeAt(0)+';';
+	});
+}]]></script>
+        <script_name>ADManagerRemoveFromGroup</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-11-21 10:22:59</sys_created_on>
+        <sys_id>8b3e4bfddb668300360eda11cf9619c3</sys_id>
+        <sys_mod_count>11</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerRemoveFromGro</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_8b3e4bfddb668300360eda11cf9619c3</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-03-15 17:18:28</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

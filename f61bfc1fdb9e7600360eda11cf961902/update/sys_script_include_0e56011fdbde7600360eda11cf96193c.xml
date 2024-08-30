@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerMIDServerHandler</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description>ADManager MID Server Handler</description>
+        <name>ADManagerMIDServerHandler</name>
+        <script><![CDATA[/*
+ * ADManager MID Server Handler
+ */
+var ADManagerMIDServerHandler = Class.create();
+ADManagerMIDServerHandler.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	// This will update Use MID Server field in all ADManager REST Messages with user provided MID Server;
+	
+	setMIDServerToRestMessages: function(sys_id) {
+		var restMessageRecord = new GlideRecord('sys_rest_message_fn');
+		restMessageRecord.addQuery('rest_endpoint', 'IN', '${url}/ADMPAPI/AddRemoveGroups, ${url}/RestAPI/ADGroupList, ${url}/RestAPI/SearchUser, ${url}/RestAPI/CreateBulkUser, ${url}/ADMPAPI/DeleteUser, ${url}/ADMPAPI/DisableUser, ${url}/ADMPAPI/EnableUser, ${url}/RestAPI/FSMFolderList, ${url}/RestAPI/GetAllTechnicianDetails, ${url}/RestAPI/GetAuthInfo, ${url}/RestAPI/APIAuthToken, ${url}/MobileAPI/MobileLogin, ${url}/MobileAPI/getManagerValues, ${url}/RestAPI/GroupsWithPermission, ${url}/servlet/GetProductVersion, ${url}/RestAPI/RemoveFolderPermissions, ${url}/ADMPAPI/ResetPwd, ${url}/RestAPI/SetFolderPermissions, ${url}/MobileAPI/MTemplateNames, ${url}/ADMPAPI/UnlockUser, ${url}/RestAPI/ValidateAuthToken, ${url}/RestAPI/GetPublicKey, ${url}/RestAPI/GetDepartmentList, ${url}/RestAPI/GetOrganizationAttributes, ${url}/RestAPI/ModifyUser, ${url}/RestAPI/ModifyManager, ${url}/RestAPI/ModifyDepartment, ${url}/RestAPI/GetUserCreationFormFields');
+		restMessageRecord.query();
+		while(restMessageRecord.next()) {
+			restMessageRecord.use_mid_server = sys_id;
+			restMessageRecord.update();
+		}
+	},
+    type: 'ADManagerMIDServerHandler'
+});
+]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-04-28 09:51:48</sys_created_on>
+        <sys_id>0e56011fdbde7600360eda11cf96193c</sys_id>
+        <sys_mod_count>20</sys_mod_count>
+        <sys_name>ADManagerMIDServerHandler</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_0e56011fdbde7600360eda11cf96193c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-12-15 13:25:31</sys_updated_on>
+    </sys_script_include>
+</record_update>

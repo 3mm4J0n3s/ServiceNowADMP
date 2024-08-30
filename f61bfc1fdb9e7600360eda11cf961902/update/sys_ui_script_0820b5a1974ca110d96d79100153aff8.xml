@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager Plus Actions Script</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerActions</name>
+        <script><![CDATA[// ------------------------------Global Variable Starts-------------------------------------------
+var CREATE_USER_FORM_CUSTOMIZATION_BUILD = 7180;
+var IS_FORM_CUSTOMIZED = false;
+var admpGlobalObj = {
+	actions: null,
+	fields: null,
+	buildNumber: null,
+	encryptedAuthtoken: null,
+};
+function setAdmpGlobalActions(actions) {
+	admpGlobalObj.actions = JSON.parse(JSON.stringify(actions));
+}
+function getAdmpGlobalActions() {
+	return JSON.parse(JSON.stringify(admpGlobalObj.actions));
+}
+function setAdmpGlobalFields(fields) {
+	admpGlobalObj.fields = JSON.parse(JSON.stringify(fields));
+}
+function getAdmpGlobalFields() {
+	return JSON.parse(JSON.stringify(admpGlobalObj.fields));
+}
+function setAdmpGlobalBuildNumber(buildNumber) {
+	admpGlobalObj.buildNumber = buildNumber;
+}
+function getAdmpGlobalBuildNumber() {
+	return admpGlobalObj.buildNumber;
+}
+function setAdmpGlobalEncryptedAuthtoken(encryptedAuthtoken) {
+	admpGlobalObj.encryptedAuthtoken = encryptedAuthtoken;
+}
+function getAdmpGlobalEncryptedAuthtoken() {
+	return admpGlobalObj.encryptedAuthtoken;
+}
+
+function initVariables() {
+	CREATE_USER_FORM_CUSTOMIZATION_BUILD = 7180;
+	IS_FORM_CUSTOMIZED = false;
+	admpGlobalObj = {
+		actions: null,
+		fields: null,
+		buildNumber: null,
+		encryptedAuthtoken: null,
+	};
+}
+// ------------------------------Global Variable Ends-------------------------------------------
+// ------------------------------On Load Starts-------------------------------------------
+function onLoad() {
+	initVariables();
+	hideRecordProducerDefaultBtns();
+	setPageTitle("ADManager Plus Actions", false);
+	freezeWindow(true, 'Loading...');
+	var ga = new GlideAjax("ADManagerConfigurationHandler");
+	ga.addParam("sysparm_name","getActionsTable");
+	ga.getXMLAnswer(getActionsTableCallback);
+	function getActionsTableCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			setAdmpGlobalActions(response.actionsObj);
+			displayActionsTable();}
+	}
+}
+// ------------------------------OnLoad Ends-------------------------------------------
+// ------------------------------Actions Utils Starts-------------------------------------------
+function displayActionsTable() {
+	var actions = getAdmpGlobalActions();
+	var html = '';
+	var editDiv = '';
+	for(var i=0;i<actions.length;i++) {
+		var sysId = actions[i].sysId;
+		var title = escapeHtml(actions[i].title);
+		var checked = (actions[i].status == 'true')? "checked": "";
+		var tooltipTxt = "Edit "+ title;
+
+		editDiv = '<div class="int-tooltip-par int-ml-14 sn-tooltip-basic" data-toggle="tooltip" data-placement="bottom" onclick="openEditAction(this);" title="'+tooltipTxt+'" id="edit_'+sysId+'">';
+		editDiv += '<i class="int-icon icn-edit-user int-cursor-pointer editAction target"></i>';
+		editDiv += '</div>';
+
+		html += '<tr class="int-hover-type-1">';
+		// 		html += '<td class="gray-td"></td>';
+		html += '<td class="int-pt-7 int-pb-7">'+title+editDiv+'</td>';
+		html += '<td class="int-pt-7 int-pb-7">';
+		html += '<div class="input-switch">';
+		html += '<input type="checkbox" id="input_'+sysId+'" name="input_'+sysId+'" onchange="switchActionStatus(this);" '+checked+'/>';
+		html += '<label aria-hidden="true" class="switch" for="input_'+sysId+'"></label>';
+		html += '</div>';
+		html += '</td>';
+		html +='</tr>';
+	}
+	$j("#admp_actions_table_body").html(html);
+}
+
+function switchActionStatus(e) {
+	var actions = getAdmpGlobalActions();
+	var action = {};
+	var sysId = e.id.split("_")[1];
+	for(var i=0;i<actions.length;i++) {
+		if(actions[i].sysId == sysId) {
+			action = actions[i];
+			action.status = (document.getElementById(e.id).checked).toString();
+			break;
+		}
+	}
+	freezeWindow(true);
+	var ga = new GlideAjax("ADManagerConfigurationHandler");
+	ga.addParam("sysparm_name","modifyActionsTable");
+	ga.addParam("action", JSON.stringify(action));
+	ga.getXMLAnswer(modifyActionsTableCallback);
+	function modifyActionsTableCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			setAdmpGlobalActions(response.actionsObj);
+		}
+	}
+}
+
+function openEditAction(e) {
+	$j(".admpActions").addClass("int-hide"); //hide ADManager Plus actions table
+	setPageTitle("Back", true); //sets the page title
+
+	var actions = getAdmpGlobalActions();
+	var action = {};
+	var sysId = e.id.split("_")[1];
+	for(var i=0;i<actions.length;i++) {
+		if(actions[i].sysId == sysId) {
+			action = actions[i];
+			break;
+		}
+	}
+	var actionTitle = (actions[i].title);
+	var actionName = (actions[i].actionName);
+	var actionDesc = (actions[i].description);
+	var actionSubmitId = "submit_"+actions[i].sysId;
+	$j("#admp_action_title").text(actionTitle);
+	$j("#admp_action_name").val(actionName);
+	$j("#admp_action_desc").val(actionDesc);
+	$j('[name="admp_action_submit"]').attr("id",actionSubmitId);
+
+	if(actionTitle == "Create User") {
+		createUserFormCustomizationOnLoad();
+		return;
+	}
+	showActionDesc(); //show the ADManager Plus edit action form
+}
+
+function submitEditAction(e) {
+	scrollToTop();
+	g_form.clearMessages();
+	var admpActionDesc = $j("#admp_action_desc").val().trim();
+	var emptyFieldsStr = checkEmptyFields(admpActionDesc);
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+	if(admpActionDesc.length > 500) {
+		g_form.addErrorMessage("Description cannot have more than 500 characters.");
+		return;
+	}
+
+	var actions = getAdmpGlobalActions();
+	var action = {};
+	var sysId = e.id.split("_")[1];
+	for(var i=0;i<actions.length;i++) {
+		if(actions[i].sysId == sysId) {
+			action = actions[i];
+			action.description = (admpActionDesc);
+			break;
+		}
+	}
+
+	var actionTitle = actions[i].title;
+	if(actionTitle == "Create User") {
+		createUserFormCustomizationOnSubmit(action);
+		return;
+	}
+
+	freezeWindow(true);
+	var ga = new GlideAjax("ADManagerConfigurationHandler");
+	ga.addParam("sysparm_name","modifyActionsTable");
+	ga.addParam("action", JSON.stringify(action));
+	ga.getXMLAnswer(modifyActionsTableCallback);
+	function modifyActionsTableCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			setAdmpGlobalActions(response.actionsObj);
+			g_form.addInfoMessage("Successfully Saved.");
+		}
+	}
+}
+
+function closeEditAction() {
+	setPageTitle("ADManager Plus Actions", false);
+	$j(".admpActions").removeClass("int-hide");
+	$j(".admpBack").addClass("int-hide");
+	$j(".createUserSelectFields").addClass("int-hide");
+}
+// ------------------------------Actions Utils Ends-------------------------------------------
+// ------------------------------Create User Form Customization Starts-------------------------------------------
+function createUserFormCustomizationOnLoad() {
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax("ADManagerCommonUtil");
+	ga.addParam("sysparm_name", "getProductVersion");
+	ga.addParam("is_requester", "true"); // to get configuration authtoken
+	ga.getXMLAnswer(getProductVersionCallback);
+	function getProductVersionCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			showActionDesc();
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == "true") {
+			var buildNumber = response.buildNumber;
+			setAdmpGlobalBuildNumber(buildNumber);
+			if(buildNumber >= CREATE_USER_FORM_CUSTOMIZATION_BUILD) {
+				IS_FORM_CUSTOMIZED = true;
+				var getPublicKeyResponse = JSON.parse(response.responseBody);
+				if (getPublicKeyResponse.status == "0") {
+					showActionDesc();
+					g_form.addErrorMessage(getPublicKeyResponse.statusMessage);
+				} else if (getPublicKeyResponse.status == "1") {
+					var publicKey = getPublicKeyResponse.publicKey;
+					var authToken = response.authToken;
+					var key = response.key;
+					if(!checkIfValidUUID(authToken, true)) {
+						authToken = decryptAuthtoken(authToken, key);
+					}
+					var encryptedAuthToken = encryptAuthtokenWithPublicKey(authToken, publicKey);
+					setAdmpGlobalEncryptedAuthtoken(encryptedAuthToken);
+					getFieldsList();
+				}
+			} else if(buildNumber < CREATE_USER_FORM_CUSTOMIZATION_BUILD) {
+				showActionDesc();
+			}
+		}
+	}
+}
+
+function getFieldsList() {
+	freezeWindow(true);
+	var ga = new GlideAjax("ADManagerCreateUserFormCustomization");
+	ga.addParam("sysparm_name","getFieldsList");
+	ga.addParam("getAllFields","true");
+	ga.addParam("buildNumber", getAdmpGlobalBuildNumber());
+	ga.addParam("encryptedAuthToken", getAdmpGlobalEncryptedAuthtoken());
+	ga.getXMLAnswer(getFieldsListCallback);
+	function getFieldsListCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			showActionDesc();
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			showActionDescFields();
+			var fieldsList = response.fieldsList;
+			setAdmpGlobalFields(fieldsList);
+			var availableFieldsHtml = '<ul>';
+			var selectedFieldsHtml = '<ul>';
+			for(var i=0;i<fieldsList.length;i++) {
+				var isMandatory = (fieldsList[i].isMandatory=="true")?true:false;
+				var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+				var maxLength = parseInt(fieldsList[i].maxLength);
+				var order = parseInt(fieldsList[i].order);
+				var displayName = fieldsList[i].displayName;
+				var fieldType = fieldsList[i].fieldType;
+				var ldapName = fieldsList[i].ldapName;
+				var sysId = fieldsList[i].sysId;
+				var mandatoryDiv = '';
+				if(!isMandatory) {
+					mandatoryDiv+='<i class="list-mandatory int-hide">*</i><span class="setMandatory">Set as Mandatory</span>';
+				} else {
+					mandatoryDiv+='<i class="list-mandatory">*</i><span class="setMandatory">Remove Mandatory</span>';
+				}
+// 				if(isSelected) {
+// 					selectedFieldsHtml += '<li class="overflow-hidden" id="field_'+sysId+'">'+escapeHtml(displayName)+mandatoryDiv+'</li>';
+// 				} else {
+// 					availableFieldsHtml += '<li class="overflow-hidden" id="field_'+sysId+'">'+escapeHtml(displayName)+'</li>';
+// 				}
+				if(isSelected) {
+					selectedFieldsHtml += '<li id="field_'+sysId+'"><div class="overflow-ellipsis" title="'+escapeHtml(displayName)+'">'+escapeHtml(displayName)+'</div>'+mandatoryDiv+'</li>';
+				} else {
+					availableFieldsHtml += '<li id="field_'+sysId+'"><div class="overflow-ellipsis" title="'+escapeHtml(displayName)+'">'+escapeHtml(displayName)+'</li>';
+				}
+			}
+			availableFieldsHtml += '</ul>';
+			selectedFieldsHtml += '</ul>';
+			$j("#admp_available_fields").html(availableFieldsHtml);
+			$j("#admp_selected_fields").html(selectedFieldsHtml);
+			if ($j(".doubly-list").length) {
+				$j.widget("ui.selectable", $j.ui.selectable, {
+            _mouseStart: function(event) {
+                
+                this._super(event);
+    
+                this.helper.css({
+                    "left": event.clientX + $j(window).scrollLeft(),
+                    "top": event.clientY + $j(window).scrollTop()
+                });
+            }
+        }); 
+				$j(".doubly-list").doublyList();
+			}
+			setRemoveMandatoryEventListener();
+		}
+	}
+}
+
+function createUserFormCustomizationOnSubmit(action) {
+	if(IS_FORM_CUSTOMIZED) {
+		var isSelectedFieldsEmpty = true;
+		var fieldsList = getAdmpGlobalFields();
+		var resultFields = [];
+		for(var i=0;i<fieldsList.length;i++) {
+			var field = fieldsList[i];
+			var sysId = field.sysId;
+			var fieldId = 'field_'+sysId;
+			var parent = document.getElementById('admp_selected_fields');
+			var child = document.getElementById(fieldId);
+			var isSelected = checkParent(parent, child);
+			field.isSelected = isSelected;
+			field.order = 1000;
+			if(isSelected) {
+				isSelectedFieldsEmpty = false;
+				var isMandatory = $j('#'+fieldId).text().endsWith('*Remove Mandatory');
+				field.isMandatory = isMandatory;
+				var index = $j('#admp_selected_fields li').index($j('#admp_selected_fields li#'+fieldId));
+				field.order = index + 1;
+			}
+			resultFields.push(field);
+		}
+		if(isSelectedFieldsEmpty) {
+			g_form.addErrorMessage("Selected Fields can't be empty.");
+			return;
+		}
+	}
+	
+	freezeWindow(true);
+	var ga = new GlideAjax("ADManagerCreateUserFormCustomization");
+	ga.addParam("sysparm_name","submitUserCreationFormFields");
+	ga.addParam("action", JSON.stringify(action));
+	if(IS_FORM_CUSTOMIZED) ga.addParam("fieldsList", JSON.stringify(resultFields));
+	ga.getXMLAnswer(submitUserCreationFormFieldsCallback);
+	function submitUserCreationFormFieldsCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			setAdmpGlobalActions(response.actionsObj);
+			if(IS_FORM_CUSTOMIZED) setAdmpGlobalFields(response.fieldsList);
+			g_form.addInfoMessage("Successfully Saved.");
+		}
+	}
+}
+
+function showActionDescFields() {
+	showActionDesc();
+	$j(".createUserSelectFields").removeClass("int-hide");
+}
+
+function showActionDesc() {
+	$j(".admpBack").removeClass("int-hide");
+}
+
+function refreshUserCreationFormFields() {
+	freezeWindow(true);
+	var ga = new GlideAjax("ADManagerCreateUserFormCustomization");
+	ga.addParam("sysparm_name","refreshUserCreationFormFields");
+	ga.addParam("buildNumber", getAdmpGlobalBuildNumber());
+	ga.addParam("encryptedAuthToken", getAdmpGlobalEncryptedAuthtoken());
+	ga.getXMLAnswer(refreshUserCreationFormFieldsCallback);
+	function refreshUserCreationFormFieldsCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			createUserFormCustomizationOnLoad();			
+		}
+	}
+}
+// ------------------------------Create User Form Customization Ends-------------------------------------------
+// ----------------------------------Double List Starts---------------------------------------
+(function ($) {
+	//yellow highlighter
+	$.fn.yellowFade = function () {
+		this.animate({
+			backgroundColor: "#ffffcc"
+		}, 1).animate({
+			backgroundColor: "none"
+		}, 200, function () {
+			$(this).attr('style', '');
+		});
+	};
+
+
+	$.fn.doublyList = function () {
+		return this.each(function () {
+			$this = $(this);
+			$bucket1 = $(".doubly-list-box ul", $this).eq(0);
+			$bucket2 = $(".doubly-list-box ul", $this).eq(1);
+
+			//move list item bucket 1
+			$(".backward", $this).off('click').on('click', function () {
+				setRemoveMandatory($bucket2, false);
+				var cloned = $(".ui-selected", $bucket2).clone();
+				$(".ui-selected", $bucket2).fadeIn('slow').remove();
+				$bucket1.append(cloned);
+				if(cloned.length > 0) animateScrollToBottom('#admp_available_fields');
+				$(".ui-selected", $bucket1).yellowFade();
+				$(".ui-selected", $bucket1).removeClass('ui-selected');
+			});
+
+			//move list item bucket 2
+			$(".forward", $this).off('click').on('click', function () {
+				setRemoveMandatory($bucket1, true);
+				var cloned = $(".ui-selected", $bucket1).clone();
+				$(".ui-selected", $bucket1).remove();
+				$bucket2.append(cloned);
+				if(cloned.length > 0) animateScrollToBottom('#admp_selected_fields');
+				$(".ui-selected", $bucket2).yellowFade();
+				$(".ui-selected", $bucket2).removeClass('ui-selected');
+				setRemoveMandatoryEventListener();
+			});
+
+			//move list items up
+			$(".move-up", $this).off('click').on('click', function () {
+				$("#admp_selected_fields li.ui-selected", $this).each(function () {
+					var $current = $(this);
+					var $previous = $current.prev();
+					if ($previous.length !== 0) {
+						$current.insertBefore($previous);
+					}
+				});
+			});
+
+			//move list items down
+			$(".move-down", $this).off('click').on('click', function () {
+				$($("#admp_selected_fields li.ui-selected", $this).get().reverse()).each(function () {
+					var $ele = $(this);
+					var $next = $ele.next();
+					if ($next.length !== 0) {
+						$ele.insertAfter($next);
+					}
+				});
+			});
+			
+
+			$bucket1.selectable();            
+			$bucket2.selectable();
+			
+			
+			$bucket2.on( "selectableselecting", function( event, ui ) {
+    if( $bucket2.parent().height() < ui.selecting.offsetTop+$(ui.selecting).height()){
+      $bucket2.scrollTop(ui.selecting.offsetTop+$(ui.selecting).height());
+
+    }
+
+        
+  } );
+		});
+	};
+})(jQuery);
+
+function animateScrollToBottom(element) {
+	$j(element).animate({
+		scrollTop: $j(element).prop('scrollHeight') - $j(element).height()
+	}, {
+		duration: 500,
+		easing: 'easeOutQuad'
+	});
+}
+// ----------------------------------Double List Ends---------------------------------------
+// ------------------------------Common Utils Starts-------------------------------------------
+function checkParent(parent, child) {
+	if (parent.contains(child)) return true;
+	return false;
+}
+
+function setRemoveMandatory($bucket, set) {
+	$j("li .ui-selected").removeClass('ui-selected');// remove ui-selected class for li child elements
+	if(set) {
+		var liEles = $j(".ui-selected", $bucket);
+		for(var i=0;i<liEles.length;i++) {
+			var fieldId = liEles[i].id;
+			var fieldsList = getAdmpGlobalFields();
+			var field = {};
+			var sysId = fieldId.split("_")[1];
+			for(var j=0;j<fieldsList.length;j++) {
+				if(fieldsList[j].sysId == sysId) {
+					field = fieldsList[j];
+					break;
+				}
+			}
+			var isMandatory = (field.isMandatory=="true")?true:false;
+			var html = '';
+			if(isMandatory) html += '<i class="list-mandatory">*</i><span class="setMandatory">Remove Mandatory</span>';
+			else html ='<i class="list-mandatory int-hide">*</i><span class="setMandatory">Set as Mandatory</span>';
+			$j('#'+fieldId).append(html);
+		}
+	} else {
+		$j(".ui-selected .list-mandatory", $bucket).remove();
+		$j(".ui-selected .setMandatory", $bucket).remove();
+	}
+}
+
+function setRemoveMandatoryEventListener() {
+	$j(".setMandatory").off('click').on("click", function () {
+		var txt = $j(this).siblings(".list-mandatory").is(':visible') ? 'Set as Mandatory' :
+		'Remove Mandatory';
+		$j(this).text(txt);
+		$j(this).siblings(".list-mandatory").toggleClass("int-hide");
+	});
+}
+
+function escapeHtml(str) {
+	return String(str).replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+		return '&#'+i.charCodeAt(0)+';';
+	});
+}
+
+function scrollToTop() {
+	$j('html,body').animate({scrollTop:0},0);
+}
+
+function checkEmptyFields(admpActionDesc) {
+	var emptyFieldsStr = '';
+	if(admpActionDesc == '') emptyFieldsStr += ' Description;';
+	return emptyFieldsStr;
+}
+
+function hideRecordProducerDefaultBtns() {
+	g_form.clearMessages();
+	g_form.disableAttachments();
+	g_form.getElement('back_button_in_header').style.display = 'none'; //back button
+	g_form.getElement('sc_attachment_button').style.display = 'none'; //attachment button
+	$j(".btn.btn-icon.icon-ellipsis").hide(); //more options button
+	g_form.getElement('submit_button').style.display = 'none'; //submit button
+	// 	$j(".pointerhand.icon-stop-watch.btn.btn-icon").hide(); //response time button
+}
+
+function setPageTitle(title, showBackBtn) {
+	g_form.clearMessages();
+	var titleElement = $j("tr.header.sc_header td.sc_header_main_cell span[role='heading']"); 
+	titleElement.css('white-space','pre');
+	titleElement.text(title);
+
+	var backButton = g_form.getElement('back_button_in_header');
+	if(showBackBtn) {
+		backButton.style.display = 'block';
+		backButton.setAttribute('onclick', 'closeEditAction();');
+	} else {
+		backButton.style.display = 'none';
+		backButton.setAttribute('onclick', '');
+	}
+}
+
+function encryptAuthtoken(authToken, key) {
+	var encryptedMessage = CryptoJS.AES.encrypt(authToken, key);
+	return encryptedMessage.toString();
+}
+
+function decryptAuthtoken(encryptedAuthToken, key) {
+	var decryptedMessage = CryptoJS.AES.decrypt(encryptedAuthToken, key);
+	return decryptedMessage.toString(CryptoJS.enc.Utf8);
+}
+
+function encryptAuthtokenWithPublicKey(authToken, publicKey) {
+	var jsEncryptObj = new JSEncrypt();
+	jsEncryptObj.setPublicKey(publicKey);
+	var encryptedAuthToken = jsEncryptObj.encrypt(authToken);
+	return encryptedAuthToken;
+}
+
+function checkIfValidUUID(str, encryptAllAuthTokens) {
+	// Regular expression to check if string is a valid UUID
+	var regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+	var isValidUUID = regexExp.test(str);
+	if(isValidUUID && encryptAllAuthTokens) {
+		getAndEncryptAllAuthTokens();
+	}
+	return isValidUUID;
+}
+
+function getAndEncryptAllAuthTokens() {
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAllAuthTokens");
+	configurationHandler.getXMLAnswer(getAllAuthTokens);
+	function getAllAuthTokens(response) {
+		response = JSON.parse(response);
+		var configurationObject = response.configurationObject;
+		for(var i = 0; i < configurationObject.length; i++) {
+			configurationObject[i].encryptedAuthToken = encryptAuthtoken(configurationObject[i].authtoken, configurationObject[i].key);
+		}
+		var associationObject = response.associationObject;
+		for(var j = 0; j < associationObject.length; j++) {
+			associationObject[j].encryptedAuthToken = encryptAuthtoken(associationObject[j].authtoken, associationObject[j].key);
+		}
+		var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+		configurationHandler.addParam("sysparm_name","encryptAllAuthTokens");
+		configurationHandler.addParam("response",  JSON.stringify(response));
+		configurationHandler.getXMLAnswer(encryptAllAuthTokens);
+		function encryptAllAuthTokens(response) {
+		}
+	}
+}
+// ------------------------------Common Utils Ends-------------------------------------------
+]]></script>
+        <script_name>ADManagerActions</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-28 12:07:05</sys_created_on>
+        <sys_id>0820b5a1974ca110d96d79100153aff8</sys_id>
+        <sys_mod_count>141</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerActions</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_0820b5a1974ca110d96d79100153aff8</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-02-15 06:25:40</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

@@ -1,0 +1,1253 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager Plus  Configuration Script</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerConfiguration</name>
+        <script><![CDATA[// ----------------------------------Initial Action starts----------------------------------------------
+var admpGlobal = {
+	serverUrl: '',
+	useMidServer: false,
+	midServerSysId: '',
+	midServerDisplayValue: '',
+	domainList: {},
+	authToken: '',
+	technician: {},
+	buildNumber : '',
+	publicKey : '',
+	existingServerSettings: {},
+	newServerSettings: {
+		isUrlChanged: 'false',
+	},
+};
+
+var AUTH_ENCRYPTED_BUILD = 7163;
+
+$j(document).ready(function() {
+	hideRecordProducerDefaultBtns();
+	domManipulation();
+	isADMPServerConfigured();
+	rolesPopupEventListener();
+// 	deleteMidServerAndTables();
+});
+
+function hideRecordProducerDefaultBtns() {
+	g_form.clearMessages();
+	g_form.disableAttachments();
+	g_form.getElement('back_button_in_header').style.display = 'none'; //back button
+	g_form.getElement('sc_attachment_button').style.display = 'none'; //attachment button
+	$j(".btn.btn-icon.icon-ellipsis").hide(); //more options button
+	g_form.getElement('submit_button').style.display = 'none'; //submit button
+	//$j(".pointerhand.icon-stop-watch.btn.btn-icon").hide(); //response time button
+}
+
+function domManipulation() {
+	$j(".use_mid_server_switch").parent().siblings("div[id*='label_IO:']").empty();
+
+	var ele1 = $j(".server_settings_edit").parents("div[id='macro_IO:991ff493db0eb4105ce09db2ca96191c']");
+	ele1.css('margin-top', '0px');
+	ele1.children("div[id*='label_IO:']").empty();
+	ele1.parents("tr[id='container_991ff493db0eb4105ce09db2ca96191c']").html(ele1);
+
+	var ele2 = $j(".admin_credentials_edit").parents("div[id='macro_IO:d94f3893db0eb4105ce09db2ca9619c6']");
+	ele2.css('margin-top', '0px');
+	ele2.children("div[id*='label_IO:']").empty();
+	ele2.parents("tr[id='container_d94f3893db0eb4105ce09db2ca9619c6']").html(ele2);
+
+	var ele3 = $j(".technician_authtoken_edit").parents("div[id='macro_IO:fae6bd462f741110f0492aa62799b617']");
+	ele3.css('margin-top', '0px');
+	ele3.children("div[id*='label_IO:']").empty();
+	ele3.parents("tr[id='container_fae6bd462f741110f0492aa62799b617']").html(ele3);
+
+	var ele4 = $j(".technician_authtoken_hover_edit").parents("div[id='macro_IO:c279c66d2f051110f0492aa62799b6a7']");
+	ele4.css('margin-top', '0px');
+	ele4.children("div[id*='label_IO:']").empty();
+	ele4.parents("tr[id='container_c279c66d2f051110f0492aa62799b6a7']").html(ele4);
+
+	var ele5 = $j(".technician_authtoken_config_edit").parents("div[id='macro_IO:3c43c84497175110d96d79100153af88']");
+	ele5.css('margin-top', '0px');
+	ele5.children("div[id*='label_IO:']").empty();
+	ele5.parents("tr[id='container_3c43c84497175110d96d79100153af88']").html(ele5);
+
+	$j('#toggleButton_bd21f857dbcab4105ce09db2ca961904').hide();
+	$j('#toggleButton_0110b857dbcab4105ce09db2ca961944').hide();
+	$j('#toggleButton_9d5c5b552f741110f0492aa62799b6c9').hide();
+
+	$j("tr.header.sc_header").append("<td><button id='admp_settings_button' data-target='#admp_settings' data-toggle='modal' class='btn btn-icon icon-cog' title='ADManager Plus Settings' style='display: none'></button></td>");
+}
+
+function isADMPServerConfigured() {
+	admpGlobal = {
+		serverUrl: '',
+		useMidServer: false,
+		midServerSysId: '',
+		midServerDisplayValue: '',
+		domainList: {},
+		authToken: '',
+		technician: {},
+		buildNumber : '',
+		publicKey : '',
+		existingServerSettings: {},
+		newServerSettings: {
+			isUrlChanged: 'false',
+		},
+	};
+	showAdmpLandingPage(false);
+	showAdmpServerSettingsPage(false);
+	showAdmpAdminCredentialsPage(false);
+	showAdmpTechnicianAuthtokenPage(false);
+	freezeWindow(true, 'Loading...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","isADMPServerConfigured");
+	configurationHandler.getXMLAnswer(isConfigured);
+	function isConfigured(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			showAdmpLandingPage(true);
+		} else if(response.status == 'true') {
+			var serverSettings = response.serverSettings;
+			admpGlobal.existingServerSettings = serverSettings;
+			var productVersionResponse = response.productVersionResponse;
+			var publicKeyResponse = response.publicKeyResponse;
+			admpGlobal.existingServerSettings.publicKey = (publicKeyResponse.status == "true" && JSON.parse(publicKeyResponse.responseBody).status == "1") ? JSON.parse(publicKeyResponse.responseBody).publicKey: "";
+			if(productVersionResponse.status == "false") {
+				if(serverSettings.domainList != "") {
+					showConfigurationPage("1");
+					g_form.setValue('admp_server_url', serverSettings.serverUrl);
+					document.getElementById('use_mid_server').checked = (serverSettings.useMidServer == 'true')? true: false;
+					switchUseMIDServer();
+					g_form.setValue('mid_server', serverSettings.midServerSysId);
+					g_form.setValue('server_settings_status', 'Unable to connect');
+					g_form.setValue('admp_username', serverSettings.admpUsername);
+					g_form.addOption('admp_domain', serverSettings.admpDomain, serverSettings.admpDomain);
+					g_form.setValue('admin_credentials_status', 'Unable to connect');
+
+					enableRecordProducerVariable(false, 'admp_server_url', 'input');
+					enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+					if(serverSettings.useMidServer == 'true') {
+						enableRecordProducerVariable(false, 'mid_server', 'input');
+					}
+					enableRecordProducerVariable(false, 'server_settings_status', 'select');
+					enableRecordProducerVariable(false, 'admp_username', 'input');
+					enableRecordProducerVariable(false, 'admp_domain', 'select');
+					enableRecordProducerVariable(false, 'admin_credentials_status', 'select');
+
+					admpGlobal.existingServerSettings.buildNumber = Number.MIN_SAFE_INTEGER;
+					admpGlobal.existingServerSettings.midServerDisplayValue = g_form.getDisplayBox('mid_server').value;
+					admpGlobal.existingServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+					admpGlobal.existingServerSettings.adminCredentialsStatus = g_form.getValue('admin_credentials_status');
+				} else if(serverSettings.domainList == "") {
+					showConfigurationPage("2");
+					g_form.setValue('admp_server_url', serverSettings.serverUrl);
+					document.getElementById('use_mid_server').checked = (serverSettings.useMidServer == 'true')? true: false;
+					switchUseMIDServer();
+					g_form.setValue('mid_server', serverSettings.midServerSysId);
+					g_form.setValue('server_settings_status', 'Unable to connect');
+					g_form.setValue('admp_authtoken', "************************************");
+					admpTechnician = serverSettings.admpDomain+ "\\"+serverSettings.admpUsername;
+					g_form.setValue('admp_technician', admpTechnician);
+
+					enableRecordProducerVariable(false, 'admp_server_url', 'input');
+					enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+					if(serverSettings.useMidServer == 'true') {
+						enableRecordProducerVariable(false, 'mid_server', 'input');
+					}
+					enableRecordProducerVariable(false, 'server_settings_status', 'select');
+					enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+					enableRecordProducerVariable(false, 'admp_technician', 'input');
+
+					admpGlobal.existingServerSettings.buildNumber = Number.MAX_SAFE_INTEGER;
+					admpGlobal.existingServerSettings.midServerDisplayValue = g_form.getDisplayBox('mid_server').value;
+					admpGlobal.existingServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+				}
+			} else if(productVersionResponse.status == "true") {
+				var admpBuildNumber = parseInt(JSON.parse(productVersionResponse.responseBody).BUILD_NUMBER);
+				admpGlobal.existingServerSettings.buildNumber = admpBuildNumber;
+				if(admpBuildNumber < AUTH_ENCRYPTED_BUILD) {
+					showConfigurationPage("1");
+					g_form.setValue('admp_server_url', serverSettings.serverUrl);
+					document.getElementById('use_mid_server').checked = (serverSettings.useMidServer == 'true')? true: false;
+					switchUseMIDServer();
+					g_form.setValue('mid_server', serverSettings.midServerSysId);
+					g_form.setValue('server_settings_status', 'Connection Established');
+					g_form.setValue('admp_username', serverSettings.admpUsername);
+					g_form.addOption('admp_domain', serverSettings.admpDomain, serverSettings.admpDomain);
+
+					enableRecordProducerVariable(false, 'admp_server_url', 'input');
+					enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+					if(serverSettings.useMidServer == 'true') {
+						enableRecordProducerVariable(false, 'mid_server', 'input');
+					}
+					enableRecordProducerVariable(false, 'server_settings_status', 'select');
+					enableRecordProducerVariable(false, 'admp_username', 'input');
+					enableRecordProducerVariable(false, 'admp_domain', 'select');
+					enableRecordProducerVariable(false, 'admin_credentials_status', 'select');
+
+					admpGlobal.existingServerSettings.midServerDisplayValue = g_form.getDisplayBox('mid_server').value;
+					admpGlobal.existingServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+
+					isAdminAuthTokenValid();
+				} else if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+					showConfigurationPage("2");
+					g_form.setValue('admp_server_url', serverSettings.serverUrl);
+					document.getElementById('use_mid_server').checked = (serverSettings.useMidServer == 'true')? true: false;
+					switchUseMIDServer();
+					g_form.setValue('mid_server', serverSettings.midServerSysId);
+					g_form.setValue('server_settings_status', 'Connection Established');
+					g_form.setValue('admp_authtoken', "************************************");
+					admpTechnician = serverSettings.admpDomain+ "\\"+serverSettings.admpUsername;
+					g_form.setValue('admp_technician', admpTechnician);
+
+					enableRecordProducerVariable(false, 'admp_server_url', 'input');
+					enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+					if(serverSettings.useMidServer == 'true') {
+						enableRecordProducerVariable(false, 'mid_server', 'input');
+					}
+					enableRecordProducerVariable(false, 'server_settings_status', 'select');
+					enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+					enableRecordProducerVariable(false, 'admp_technician', 'input');
+
+					admpGlobal.existingServerSettings.midServerDisplayValue = g_form.getDisplayBox('mid_server').value;
+					admpGlobal.existingServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+				}
+			}
+			//  ADManager Plus Settings
+			document.getElementById('admp_form_context_menu').checked = (serverSettings.isFormContextMenuEnabled == 'true')? true: false;
+			document.getElementById('admp_service_catalog').checked = (serverSettings.isServiceCatalogEnabled == 'true')? true: false;
+		}
+	}
+}
+
+function isAdminAuthTokenValid() {
+	freezeWindow(true, 'Validating Authtoken...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","isAdminAuthTokenValid");
+	configurationHandler.getXMLAnswer(isValid);
+	function isValid(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.setValue('admin_credentials_status', response.responseBody);
+		} else {
+			g_form.setValue('admin_credentials_status', 'Valid Authtoken');
+		}
+		admpGlobal.existingServerSettings.adminCredentialsStatus = g_form.getValue('admin_credentials_status');
+	}
+}
+// ----------------------------------Initial Action ends----------------------------------------------
+// ----------------------------------Server Settings starts----------------------------------------------
+function submitServerSettings(isEdit) {
+	scrollToTop();
+	g_form.clearMessages();
+	var admpServerUrl = g_form.getValue('admp_server_url');
+	admpServerUrl = removeTrailingSlash(admpServerUrl.trim()); // remove trialing slash due to security changes
+	g_form.setValue('admp_server_url', admpServerUrl);
+	var useMidServer = document.getElementById('use_mid_server').checked;
+	var midServerSysId = g_form.getValue('mid_server');
+	var midServerDisplayValue = g_form.getDisplayBox('mid_server').value;  //  getting the display value of reference field
+	var emptyFieldsStr = checkEmptyFieldsInServerSettings(admpServerUrl, useMidServer, midServerDisplayValue);
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+	} else {
+		if(isEdit == true) {
+			updateServerSettings(admpServerUrl, useMidServer, midServerSysId, midServerDisplayValue);
+		} else {
+			saveServerSettings(admpServerUrl, useMidServer, midServerSysId, midServerDisplayValue);
+		}
+	}
+}
+
+function checkEmptyFieldsInServerSettings(admpServerUrl, useMidServer, midServerDisplayValue) {
+	var emptyFieldsStr = '';
+	if(admpServerUrl.trim() == '') emptyFieldsStr += ' ADManager Plus URL;';
+	if(useMidServer == true) {
+		if(midServerDisplayValue.trim() == '') emptyFieldsStr += ' MID Server;';
+	}
+	return emptyFieldsStr;
+}
+
+function saveServerSettings(admpServerUrl, useMidServer, midServerSysId, midServerDisplayValue) {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","connectToAdmp");
+	configurationHandler.addParam("admpServerUrl", admpServerUrl);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerDisplayValue", midServerDisplayValue);
+	configurationHandler.addParam("getProductVersion", 'true');
+	configurationHandler.getXMLAnswer(connectToAdmp);
+	function connectToAdmp(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			var admpBuildNumber = response.admpBuildNumber;
+			if(admpBuildNumber < AUTH_ENCRYPTED_BUILD ) {
+				g_form.addInfoMessage('Successfully connected.');
+				showAdmpServerSettingsPage(false);
+				showAdmpAdminCredentialsPage(true);
+				var domainList = JSON.parse(response.responseBody);
+				admpGlobal.serverUrl = admpServerUrl;
+				admpGlobal.useMidServer = useMidServer;
+				admpGlobal.midServerSysId = midServerSysId;
+				admpGlobal.midServerDisplayValue = midServerDisplayValue;
+				admpGlobal.domainList = domainList;
+				admpGlobal.buildNumber = admpBuildNumber;
+				for(var domainFlatName in domainList) {
+					g_form.addOption('admp_domain', domainList[domainFlatName], domainList[domainFlatName]);
+				}
+			} else if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+				var getPublicKeyResponse = JSON.parse(response.responseBody);
+				if(getPublicKeyResponse.status == "0") {
+					g_form.addErrorMessage(getPublicKeyResponse.statusMessage);
+				} else if(getPublicKeyResponse.status == "1") {
+					g_form.addInfoMessage('Successfully connected.');
+					showAdmpServerSettingsPage(false);
+					showAdmpTechnicianAuthtokenPage(true, "1");
+					admpGlobal.serverUrl = admpServerUrl;
+					admpGlobal.useMidServer = useMidServer;
+					admpGlobal.midServerSysId = midServerSysId;
+					admpGlobal.midServerDisplayValue = midServerDisplayValue;
+					admpGlobal.publicKey = getPublicKeyResponse.publicKey;
+					admpGlobal.buildNumber = admpBuildNumber;
+				}
+			}
+		}
+	}
+}
+
+function editServerSettings(isEdit) {
+	g_form.clearMessages();
+	var serverSettings = admpGlobal.existingServerSettings;
+	var admpBuildNumber = serverSettings.buildNumber;
+	if(isEdit == false) {
+		g_form.setValue('admp_server_url', serverSettings.serverUrl);
+		document.getElementById('use_mid_server').checked = (serverSettings.useMidServer == 'true')? true: false;
+		switchUseMIDServer();
+		g_form.setValue('mid_server', serverSettings.midServerSysId);
+		g_form.setValue('server_settings_status', serverSettings.serverSettingsStatus);
+	}
+
+	showUiMacro(!isEdit, 'server_settings_edit');
+	if(admpBuildNumber < AUTH_ENCRYPTED_BUILD) showUiMacro(!isEdit, 'admin_credentials_edit');
+	else if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) showUiMacro(!isEdit, 'technician_authtoken_hover_edit');
+	showRecordProducerVariable(!isEdit, 'server_settings_status', 'status');
+
+	enableRecordProducerVariable(isEdit, 'admp_server_url', 'input');
+	enableRecordProducerVariable(isEdit, 'use_mid_server', 'switch');
+	if(serverSettings.useMidServer == 'true') {
+		enableRecordProducerVariable(isEdit, 'mid_server', 'input');
+	}
+	showUiMacro(isEdit, 'submit_server_settings', 'update_server_settings');
+}
+
+function openUpdateServerSettings() {
+	g_form.clearMessages();
+	var title = 'Alert';
+	var message = 'Changing ADManager Plus URL will also change the admin/technician credentials. Do you wish to continue?';
+	showConfirmModal(title, message, function() {
+		submitServerSettings(true);
+	});
+}
+
+function showConfirmModal(title, message, yesCallBack, noCallBack) {
+	$j("#admp_confirm_modal_title").text(title);
+	$j("#admp_confirm_modal_message").text(message);
+	$j("#admp_confirm_modal_yes").text('Yes');
+	$j("#admp_confirm_modal_no").text('No');
+	$j("#admp_confirm_modal_yes").off('click');
+	$j("#admp_confirm_modal_yes").on('click', yesCallBack);
+
+}
+
+function updateServerSettings(admpServerUrl, useMidServer, midServerSysId, midServerDisplayValue) {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","connectToAdmp");
+	configurationHandler.addParam("admpServerUrl", admpServerUrl);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerDisplayValue", midServerDisplayValue);
+	configurationHandler.addParam("getProductVersion", 'true');
+	configurationHandler.getXMLAnswer(connectToAdmp);
+	function connectToAdmp(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			scrollToTop();
+			var admpBuildNumber = response.admpBuildNumber;
+			if(admpBuildNumber < AUTH_ENCRYPTED_BUILD ) {
+				g_form.addInfoMessage('Successfully connected.');
+				g_form.setValue('server_settings_status', 'Connection Established');
+
+				enableRecordProducerVariable(false, 'admp_server_url', 'input');
+				enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+				if(useMidServer == true) {
+					enableRecordProducerVariable(false, 'mid_server', 'input');
+				}
+				showRecordProducerVariable(true, 'server_settings_status', 'status');
+				showUiMacro(false, 'submit_server_settings', 'update_server_settings');
+
+				showUpdateTechnicianAuthtokenPage(false);
+				showRecordProducerVariable(true, 'admp_username', 'input');
+				enableRecordProducerVariable(true, 'admp_username', 'input');
+				showRecordProducerVariable(true, 'admp_password', 'input');
+				showRecordProducerVariable(true, 'admp_domain', 'select');
+				enableRecordProducerVariable(true, 'admp_domain', 'select');
+				showRecordProducerVariable(false, 'admin_credentials_status', 'status');
+				showUiMacro(true, 'submit_admin_credentials', 'update_admin_credentials');
+
+				g_form.clearValue('admp_username');
+				g_form.clearOptions('admp_domain');
+				var domainList = JSON.parse(response.responseBody);
+				for(var domainFlatName in domainList) {
+					g_form.addOption('admp_domain', domainList[domainFlatName], domainList[domainFlatName]);
+				}
+
+				admpGlobal.newServerSettings.buildNumber = admpBuildNumber;
+				admpGlobal.newServerSettings.isUrlChanged = 'true';
+				admpGlobal.newServerSettings.serverUrl = admpServerUrl;
+				admpGlobal.newServerSettings.useMidServer = useMidServer.toString();
+				admpGlobal.newServerSettings.midServerSysId = midServerSysId;
+				admpGlobal.newServerSettings.midServerDisplayValue = midServerDisplayValue;
+				admpGlobal.newServerSettings.domainList = domainList;
+				admpGlobal.newServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+			} else if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+				var getPublicKeyResponse = JSON.parse(response.responseBody);
+				if(getPublicKeyResponse.status == "0") {
+					g_form.addErrorMessage(getPublicKeyResponse.statusMessage);
+				} else if(getPublicKeyResponse.status == "1") {
+					g_form.addInfoMessage('Successfully connected.');
+					g_form.setValue('server_settings_status', 'Connection Established');
+
+					enableRecordProducerVariable(false, 'admp_server_url', 'input');
+					enableRecordProducerVariable(false, 'use_mid_server', 'switch');
+					if(useMidServer == true) {
+						enableRecordProducerVariable(false, 'mid_server', 'input');
+					}
+					showRecordProducerVariable(true, 'server_settings_status', 'status');
+					showUiMacro(false, 'submit_server_settings', 'update_server_settings');
+
+					showUpdateAdminCredentialsPage(false);
+					showRecordProducerVariable(true, 'admp_authtoken', 'input');
+					enableRecordProducerVariable(true, 'admp_authtoken', 'input');
+					showRecordProducerVariable(false, 'admp_technician', 'input');
+					showUiMacro(true, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+
+					g_form.clearValue('admp_authtoken');
+
+					admpGlobal.newServerSettings.buildNumber = admpBuildNumber;
+					admpGlobal.newServerSettings.publicKey = getPublicKeyResponse.publicKey;
+					admpGlobal.newServerSettings.isUrlChanged = 'true';
+					admpGlobal.newServerSettings.serverUrl = admpServerUrl;
+					admpGlobal.newServerSettings.useMidServer = useMidServer.toString();
+					admpGlobal.newServerSettings.midServerSysId = midServerSysId;
+					admpGlobal.newServerSettings.midServerDisplayValue = midServerDisplayValue;
+					// 					admpGlobal.newServerSettings.domainList = domainList;
+					admpGlobal.newServerSettings.serverSettingsStatus = g_form.getValue('server_settings_status');
+				}
+			}
+		}
+	}
+}
+
+function switchUseMIDServer() {
+	if (document.getElementById('use_mid_server').checked) {
+		showRecordProducerVariable(true, 'mid_server', 'input');	
+	} else {
+		showRecordProducerVariable(false, 'mid_server', 'input');	
+	}
+}
+// ----------------------------------Server Settings ends----------------------------------------------
+// ----------------------------------Admin Credentials starts----------------------------------------------
+function submitAdminCredentials(isEdit) {
+	scrollToTop();
+	g_form.clearMessages();
+	var admpUsername = g_form.getValue('admp_username');
+	var admpPassword = g_form.getValue('admp_password');
+	var admpDomain = g_form.getValue('admp_domain');
+	var emptyFieldsStr = checkEmptyFieldsInAdminCredentials(admpUsername, admpPassword, admpDomain);
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+	} else {
+		if(isEdit == true) {
+			isAdminCredentialsAssociated(admpUsername, admpPassword, admpDomain);
+		} else {
+			saveAdminCredentials(admpUsername, admpPassword, admpDomain);
+		}
+	}
+}
+
+function checkEmptyFieldsInAdminCredentials(admpUsername, admpPassword, admpDomain) {
+	var emptyFieldsStr = '';
+	if(admpUsername.trim() == '') emptyFieldsStr += ' Username;';
+	if(admpPassword == '') emptyFieldsStr += ' Password;';
+	if(admpDomain.trim() == '') emptyFieldsStr += ' Domain;';
+	return emptyFieldsStr;
+}
+
+function saveAdminCredentials(admpUsername, admpPassword, admpDomain) {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAuthToken");
+	configurationHandler.addParam("isUrlChanged", 'true');
+	configurationHandler.addParam("admpServerUrl", admpGlobal.serverUrl);
+	configurationHandler.addParam("useMidServer", admpGlobal.useMidServer);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerSysId", admpGlobal.midServerSysId);
+	configurationHandler.addParam("midServerDisplayValue", admpGlobal.midServerDisplayValue);
+	configurationHandler.addParam("admpDomainList", JSON.stringify(admpGlobal.domainList));
+	configurationHandler.addParam("admpUsername", admpUsername);
+	configurationHandler.addParam("admpPassword", admpPassword);
+	configurationHandler.addParam("admpDomain", admpDomain);
+	configurationHandler.getXMLAnswer(getAuthToken);
+	function getAuthToken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage('Successfully configured.');
+			isADMPServerConfigured();
+		}
+	}
+}
+
+function editAdminCredentials(isEdit) {
+	g_form.clearMessages();
+	var existingBuildNumber = admpGlobal.existingServerSettings.buildNumber;
+	var newBuildNumber = admpGlobal.newServerSettings.buildNumber;
+	if(isEdit && existingBuildNumber < AUTH_ENCRYPTED_BUILD) {
+		showUiMacro(false, 'server_settings_edit');
+		showUiMacro(false, 'admin_credentials_edit');
+		showRecordProducerVariable(false, 'admin_credentials_status', 'status');
+
+		showRecordProducerVariable(true, 'admp_username', 'input');
+		enableRecordProducerVariable(true, 'admp_username', 'input');
+		showRecordProducerVariable(true, 'admp_password', 'input');
+		showRecordProducerVariable(true, 'admp_domain', 'select');
+		enableRecordProducerVariable(true, 'admp_domain', 'select');
+		showUiMacro(true, 'submit_admin_credentials', 'update_admin_credentials');
+		g_form.clearOptions('admp_domain');
+		freezeWindow(true, 'Connecting ADManager Plus...');
+		var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+		configurationHandler.addParam("sysparm_name","getAdmpDomainList");
+		configurationHandler.getXMLAnswer(getAdmpDomainList);
+		function getAdmpDomainList(response) {
+			freezeWindow(false);
+			response = JSON.parse(response);
+			if(response.status == 'false') {
+				scrollToTop();
+				g_form.addErrorMessage(response.responseBody);
+				var domainList = JSON.parse(admpGlobal.existingServerSettings.domainList);
+
+			} else if(response.status == 'true') {
+				domainList = JSON.parse(response.responseBody);
+			}
+			for(var domainFlatName in domainList) {
+				g_form.addOption('admp_domain', domainList[domainFlatName], domainList[domainFlatName]);
+			}
+		}
+	}
+	if(isEdit == false) {
+		admpGlobal.newServerSettings =  {
+			isUrlChanged: 'false',
+		};
+		editServerSettings(false);
+		showUiMacro(true, 'server_settings_edit');
+		if(existingBuildNumber < AUTH_ENCRYPTED_BUILD) {
+			showUiMacro(true, 'admin_credentials_edit');
+			showRecordProducerVariable(true, 'admp_username', 'input');
+			enableRecordProducerVariable(false, 'admp_username', 'input');
+			showRecordProducerVariable(false, 'admp_password', 'input');
+			showRecordProducerVariable(true, 'admp_domain', 'select');
+			enableRecordProducerVariable(false, 'admp_domain', 'select');
+			showRecordProducerVariable(true, 'admin_credentials_status', 'status');
+			showUiMacro(false, 'submit_admin_credentials', 'update_admin_credentials');
+
+			g_form.setValue('admp_username', admpGlobal.existingServerSettings.admpUsername);
+			g_form.clearOptions('admp_domain');
+			g_form.addOption('admp_domain', admpGlobal.existingServerSettings.admpDomain, admpGlobal.existingServerSettings.admpDomain);
+			g_form.setValue('admin_credentials_status', admpGlobal.existingServerSettings.adminCredentialsStatus);
+		}
+		if(existingBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+			showUpdateTechnicianAuthtokenPage(true);
+			showUiMacro(true, 'technician_authtoken_hover_edit');
+			showRecordProducerVariable(false, 'admp_username', 'input');
+			enableRecordProducerVariable(false, 'admp_username', 'input');
+			showRecordProducerVariable(false, 'admp_password', 'input');
+			showRecordProducerVariable(false, 'admp_domain', 'select');
+			enableRecordProducerVariable(false, 'admp_domain', 'select');
+			showRecordProducerVariable(false, 'admin_credentials_status', 'status');
+			showUiMacro(false, 'submit_admin_credentials', 'update_admin_credentials');
+		}
+	}	
+}
+
+function isAdminCredentialsAssociated(admpUsername, admpPassword, admpDomain) {
+	var newServerSettings = admpGlobal.newServerSettings;
+	var isUrlChanged = newServerSettings.isUrlChanged;
+	if(isUrlChanged == 'true') {
+		updateAdminCredentials(admpUsername, admpPassword, admpDomain);
+		return;
+	}
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","isNotAssociated");
+	configurationHandler.addParam("admpTechnicianDisplayName", (admpDomain+'\\'+admpUsername));
+	configurationHandler.getXMLAnswer(isNotAssociated);
+	function isNotAssociated(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			updateAdminCredentials(admpUsername, admpPassword, admpDomain);
+		}
+	}
+}
+
+function updateAdminCredentials(admpUsername, admpPassword, admpDomain) {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var existingServerSettings = admpGlobal.existingServerSettings;
+	var newServerSettings = admpGlobal.newServerSettings;
+	var isUrlChanged = newServerSettings.isUrlChanged;
+	var admpServerUrl = (isUrlChanged == 'true')? newServerSettings.serverUrl: existingServerSettings.serverUrl;
+	var useMidServer = (isUrlChanged == 'true')? newServerSettings.useMidServer: existingServerSettings.useMidServer;
+	var midServerSysId = (isUrlChanged == 'true')? newServerSettings.midServerSysId: existingServerSettings.midServerSysId;
+	var midServerDisplayValue = (isUrlChanged == 'true')? newServerSettings.midServerDisplayValue: existingServerSettings.midServerDisplayValue;
+	var admpDomainList = (isUrlChanged == 'true')? newServerSettings.domainList: JSON.parse(existingServerSettings.domainList);
+
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAuthToken");
+	configurationHandler.addParam("isUrlChanged", isUrlChanged);
+	configurationHandler.addParam("admpServerUrl", admpServerUrl);
+	configurationHandler.addParam("useMidServer", useMidServer);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerSysId", midServerSysId);
+	configurationHandler.addParam("midServerDisplayValue", midServerDisplayValue);
+	configurationHandler.addParam("admpDomainList", JSON.stringify(admpDomainList));
+	configurationHandler.addParam("admpUsername", admpUsername);
+	configurationHandler.addParam("admpPassword", admpPassword);
+	configurationHandler.addParam("admpDomain", admpDomain);
+	configurationHandler.getXMLAnswer(getAuthToken);
+	function getAuthToken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage('Successfully configured.');
+			g_form.setValue('admin_credentials_status', 'Valid AuthToken');
+
+			admpGlobal.newServerSettings.adminCredentialsStatus = g_form.getValue('admin_credentials_status');
+
+			isADMPServerConfigured();			
+		}
+	}
+}
+
+// ----------------------------------Admin Credentials ends----------------------------------------------
+// ---------------------------------------Technician Authtoken starts-------------------------------------------------
+function validateTechnicianAuthtoken() {
+	scrollToTop();
+	g_form.clearMessages();
+	var admpAuthtoken = g_form.getValue('admp_authtoken').trim();
+	if(admpAuthtoken == '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in: Authtoken");
+		return;
+	}
+	freezeWindow(true, 'Validating Authtoken...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAuthInfo");
+	configurationHandler.addParam("admpServerUrl", admpGlobal.serverUrl);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerDisplayValue", admpGlobal.midServerDisplayValue);
+	configurationHandler.addParam("authToken", encryptAuthtokenWithPublicKey(admpAuthtoken, admpGlobal.publicKey));
+	configurationHandler.addParam("buildNumber", admpGlobal.buildNumber);
+	configurationHandler.getXMLAnswer(validateAuthtoken);
+	function validateAuthtoken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false' || response.admpTechnician == null) {
+			if(response.status == 'true' && response.admpTechnician == null) {
+				g_form.addErrorMessage("Some internal error occured!");
+				return;
+			}
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			showAdmpTechnicianAuthtokenPage(true, "2");
+			var maskedAuthtoken = admpAuthtoken.substring(0, 4) + "****************************" + admpAuthtoken.substring(32, 36);
+			g_form.setValue('admp_authtoken', maskedAuthtoken);
+			var admpTechnician = response.admpTechnician;
+			g_form.setValue('admp_technician', admpTechnician.DOMAINNAME + "\\" + admpTechnician.NAME);
+			loadAssociatedRoles(admpTechnician);
+
+			admpGlobal.authToken = admpAuthtoken;
+			admpGlobal.technician = admpTechnician;
+		}
+	}
+}
+
+function updateValidateTechnicianAuthtoken() {
+	scrollToTop();
+	g_form.clearMessages();
+	var admpAuthtoken = g_form.getValue('admp_authtoken').trim();
+	if(admpAuthtoken == '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in: Authtoken");
+		return;
+	}
+
+	var existingServerSettings = admpGlobal.existingServerSettings;
+	var newServerSettings = admpGlobal.newServerSettings;
+	var isUrlChanged = newServerSettings.isUrlChanged;
+	var admpServerUrl = (isUrlChanged == 'true')? newServerSettings.serverUrl: existingServerSettings.serverUrl;
+	var midServerDisplayValue = (isUrlChanged == 'true')? newServerSettings.midServerDisplayValue: existingServerSettings.midServerDisplayValue;
+	var publicKey = (isUrlChanged == 'true')? newServerSettings.publicKey: existingServerSettings.publicKey;
+	var buildNumber = (isUrlChanged == 'true')? newServerSettings.buildNumber: existingServerSettings.buildNumber;
+
+	freezeWindow(true, 'Validating Authtoken...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAuthInfo");
+	configurationHandler.addParam("admpServerUrl", admpServerUrl);
+	configurationHandler.addParam("useExistingMidServer", 'false');
+	configurationHandler.addParam("midServerDisplayValue", midServerDisplayValue);
+	configurationHandler.addParam("authToken", encryptAuthtokenWithPublicKey(admpAuthtoken, publicKey));
+	configurationHandler.addParam("buildNumber", buildNumber);
+	configurationHandler.getXMLAnswer(validateAuthtoken);
+	function validateAuthtoken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false' || response.admpTechnician == null) {
+			if(response.status == 'true' && response.admpTechnician == null) {
+				g_form.addErrorMessage("Some internal error occured!");
+				return;
+			}
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			showUiMacro(true, 'technician_authtoken_config_edit');
+			enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+			showRecordProducerVariable(true, 'admp_technician', 'input');
+			enableRecordProducerVariable(false, 'admp_technician', 'input');
+			g_form.setDisplay('associated_roles', true);
+			showUiMacro(false, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+			showUiMacro(true, 'submit_technician_authtoken', 'update_submit_technician_authtoken');
+
+			var maskedAuthtoken = admpAuthtoken.substring(0, 4) + "****************************" + admpAuthtoken.substring(32, 36);
+			g_form.setValue('admp_authtoken', maskedAuthtoken);
+			var admpTechnician = response.admpTechnician;
+			g_form.setValue('admp_technician', admpTechnician.DOMAINNAME + "\\" + admpTechnician.NAME);
+			loadAssociatedRoles(admpTechnician);
+
+			admpGlobal.newServerSettings.authToken = admpAuthtoken;
+			admpGlobal.newServerSettings.technician = admpTechnician;
+		}
+	}
+}
+
+function editTechnicianAuthtoken() {
+	showUiMacro(false, 'technician_authtoken_edit');
+	enableRecordProducerVariable(true, 'admp_authtoken', 'input');
+	g_form.setValue('admp_authtoken', admpGlobal.authToken);
+	showUiMacro(true, 'validate_technician_authtoken');
+	showUiMacro(false, 'submit_technician_authtoken');
+}
+
+function editTechnicianAuthtokenConfig() {
+	showUiMacro(false, 'technician_authtoken_config_edit');
+	enableRecordProducerVariable(true, 'admp_authtoken', 'input');
+	g_form.setValue('admp_authtoken', admpGlobal.newServerSettings.authToken);
+	showUiMacro(true, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+	showUiMacro(false, 'submit_technician_authtoken', 'update_submit_technician_authtoken');
+}
+
+function editTechnicianAuthtokenHover(isEdit) {
+	g_form.clearMessages();
+	var existingBuildNumber = admpGlobal.existingServerSettings.buildNumber;
+	var newBuildNumber = admpGlobal.newServerSettings.buildNumber;
+	showUiMacro(!isEdit, 'server_settings_edit');
+	if(isEdit && existingBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+		showUiMacro(false, 'technician_authtoken_hover_edit');
+		enableRecordProducerVariable(true, 'admp_authtoken', 'input');
+		g_form.clearValue('admp_authtoken');
+		showRecordProducerVariable(false, 'admp_technician', 'input');
+		enableRecordProducerVariable(false, 'admp_technician', 'input');
+		showUiMacro(true, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+	}
+	if(isEdit == false) {
+		admpGlobal.newServerSettings =  {
+			isUrlChanged: 'false',
+		};
+		editServerSettings(false);
+		if(existingBuildNumber < AUTH_ENCRYPTED_BUILD) {
+			showUiMacro(true, 'admin_credentials_edit');
+			showUpdateAdminCredentialsPage(true);
+			showUiMacro(false, 'technician_authtoken_hover_edit');
+			showUiMacro(false, 'technician_authtoken_config_edit');
+			showRecordProducerVariable(false, 'admp_authtoken', 'input');
+			enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+			showRecordProducerVariable(false, 'admp_technician', 'input');
+			enableRecordProducerVariable(false, 'admp_technician', 'input');
+			g_form.setDisplay('associated_roles', false);
+			showUiMacro(false, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+			showUiMacro(false, 'submit_technician_authtoken', 'update_submit_technician_authtoken');
+		} else if(existingBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+			showUiMacro(true, 'technician_authtoken_hover_edit');
+			showUiMacro(false, 'technician_authtoken_config_edit');
+			showRecordProducerVariable(true, 'admp_authtoken', 'input');
+			enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+			showRecordProducerVariable(true, 'admp_technician', 'input');
+			enableRecordProducerVariable(false, 'admp_technician', 'input');
+			showUiMacro(false, 'validate_technician_authtoken', 'update_validate_technician_authtoken');
+			showUiMacro(false, 'submit_technician_authtoken', 'update_submit_technician_authtoken');
+			g_form.setDisplay('associated_roles', false);
+			g_form.setValue('admp_authtoken', "************************************");
+			var admpTechnician = admpGlobal.existingServerSettings.admpDomain+ "\\"+admpGlobal.existingServerSettings.admpUsername;
+			g_form.setValue('admp_technician', admpTechnician);
+		}
+	}
+}
+
+function submitTechnicianAuthtoken() {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","initialConfigurationForSecurityEnhancement");
+	configurationHandler.addParam("isUrlChanged", 'true');
+	configurationHandler.addParam("admpServerUrl", admpGlobal.serverUrl);
+	configurationHandler.addParam("useMidServer", admpGlobal.useMidServer);
+	configurationHandler.addParam("midServerSysId", admpGlobal.midServerSysId);
+	configurationHandler.addParam("midServerDisplayValue", admpGlobal.midServerDisplayValue);
+	configurationHandler.addParam("admpAuthtoken", encryptAuthtoken(admpGlobal.authToken, admpGlobal.technician.NAME));
+	configurationHandler.addParam("admpAuthtokenForAssociation", encryptAuthtoken(admpGlobal.authToken, g_user.userID));
+	configurationHandler.addParam("admpTechnician", JSON.stringify(admpGlobal.technician));
+	configurationHandler.getXMLAnswer(submitAuthtoken);
+	function submitAuthtoken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage('Successfully configured.');
+			isADMPServerConfigured();
+		}
+	}
+}
+
+function isTechnicianAuthtokenAssociated() {
+	var newServerSettings = admpGlobal.newServerSettings;
+	var isUrlChanged = newServerSettings.isUrlChanged;
+	if(isUrlChanged == 'true') {
+		updateSubmitTechnicianAuthtoken();
+		return;
+	}
+	var admpTechnician = admpGlobal.newServerSettings.technician;
+	var admpTechnicianDisplayName = admpTechnician.DOMAINNAME + "\\" + admpTechnician.NAME;
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name", "isNotAssociated");
+	configurationHandler.addParam("admpTechnicianDisplayName", admpTechnicianDisplayName);
+	configurationHandler.getXMLAnswer(isNotAssociated);
+	function isNotAssociated(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			updateSubmitTechnicianAuthtoken();
+		}
+	}
+}
+
+function updateSubmitTechnicianAuthtoken() {
+	var existingServerSettings = admpGlobal.existingServerSettings;
+	var newServerSettings = admpGlobal.newServerSettings;
+	var isUrlChanged = newServerSettings.isUrlChanged;
+	var admpServerUrl = (isUrlChanged == 'true')? newServerSettings.serverUrl: existingServerSettings.serverUrl;
+	var useMidServer = (isUrlChanged == 'true')? newServerSettings.useMidServer: existingServerSettings.useMidServer;
+	var midServerSysId = (isUrlChanged == 'true')? newServerSettings.midServerSysId: existingServerSettings.midServerSysId;
+	var midServerDisplayValue = (isUrlChanged == 'true')? newServerSettings.midServerDisplayValue: existingServerSettings.midServerDisplayValue;
+	// 	var admpDomainList = (isUrlChanged == 'true')? newServerSettings.domainList: JSON.parse(existingServerSettings.domainList);
+	var admpAuthtoken = admpGlobal.newServerSettings.authToken;
+	var admpTechnician = admpGlobal.newServerSettings.technician;
+
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","initialConfigurationForSecurityEnhancement");
+	configurationHandler.addParam("isUrlChanged", isUrlChanged);
+	configurationHandler.addParam("admpServerUrl", admpServerUrl);
+	configurationHandler.addParam("useMidServer", useMidServer);
+	configurationHandler.addParam("midServerSysId", midServerSysId);
+	configurationHandler.addParam("midServerDisplayValue", midServerDisplayValue);
+	configurationHandler.addParam("admpAuthtoken", encryptAuthtoken(admpAuthtoken, admpTechnician.NAME));
+	configurationHandler.addParam("admpAuthtokenForAssociation", encryptAuthtoken(admpAuthtoken, g_user.userID));
+	configurationHandler.addParam("admpTechnician", JSON.stringify(admpTechnician));
+	configurationHandler.getXMLAnswer(submitAuthtoken);
+	function submitAuthtoken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage('Successfully configured.');
+			isADMPServerConfigured();			
+		}
+	}
+}
+
+// ---------------------------------------Technician Authtoken ends---------------------------------------------------
+// ----------------------------------------------Associated Roles starts----------------------------------
+
+function loadAssociatedRoles(admpTechnician) {
+	$j("#admp_role_name").text(" " + admpTechnician.ADMP_ROLE_NAME.valueStr + "  ");
+	var roles = admpTechnician.ADMP_ROLE_NAME.values;
+	var html = '';
+
+	for(var row = 0; row < roles.length; row++) {
+		html += "<tr>";
+		html += "<td>" + escapeHtml(roles[row].ADMP_ROLE_NAME) + "</td>";
+		html += "<td>" + escapeHtml(roles[row].ADMP_DOMAIN_NAME) + "</td>";
+		html += "</tr>";
+	}
+	$j("#admp_roles_body").html(html);
+
+	// handle UI to solve the margin, padding and overflow problem
+	var associatedRolesElement = $j('#associated_roles');
+	associatedRolesElement.parent().css('overflow', 'visible');
+	associatedRolesElement.parent().css('min-height', '10px');
+	associatedRolesElement.parent().siblings("div[id*='label_IO:']").empty();
+	associatedRolesElement.parents("div.row.sc-row").css('margin-top', '0px');
+
+	$j("#more_details").off('click');
+	$j(".roles-popup").off('toggle');
+	$j("#more_details").on('click', function() {	
+		$j(".roles-popup").toggle(200);
+	});
+}
+
+function rolesPopupEventListener() {
+	// hide the associated roles popup when clicked anywhere in the document but the popup.
+	$j(document).mouseup(function (e) {
+		var container = $j(".roles-popup-container"); 
+		if(!container.is(e.target) &&  container.has(e.target).length === 0) {
+			$j(".roles-popup").hide(); 
+		} 
+	});
+}
+
+function escapeHtml(str) {
+	return String(str).replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+		return '&#'+i.charCodeAt(0)+';';
+	});
+}
+// ----------------------------------------------Associated Roles ends-----------------------------------
+// ---------------------------------------ADMP Settings starts-------------------------------------------------
+function switchFormContextMenu() {
+	var isFormContextMenuEnabled = document.getElementById('admp_form_context_menu').checked;
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","updateIsFormContextMenuEnabled");
+	configurationHandler.addParam("isFormContextMenuEnabled", isFormContextMenuEnabled);
+	configurationHandler.getXMLAnswer(updateIsFormContextMenuEnabled);
+	function updateIsFormContextMenuEnabled(response) {
+	}
+}
+
+function switchServiceCatalog() {
+	var isServiceCatalogEnabled = document.getElementById('admp_service_catalog').checked;
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","updateIsServiceCatalogEnabled");
+	configurationHandler.addParam("isServiceCatalogEnabled", isServiceCatalogEnabled);
+	configurationHandler.getXMLAnswer(updateIsServiceCatalogEnabled);
+	function updateIsServiceCatalogEnabled(response) {
+	}
+}
+// ---------------------------------------ADMP Settings ends-------------------------------------------------
+// ---------------------------------------Show/Hide starts-------------------------------------------------
+function performAction(action, event) {
+	if (action == 'downloadAdmp') {
+		var url = "https://www.manageengine.com/products/ad-manager/download.html?utm_source=servicenow";
+		window.open(url, "_blank");
+	} else if(action == 'integrateNow') {
+		if(event.target.id == "admp_integrate_now") {
+			showAdmpLandingPage(false);
+			showAdmpServerSettingsPage(true);
+		}
+	} else if(action == 'backToLandingPage') {
+		g_form.clearMessages();
+		showAdmpServerSettingsPage(false);
+		showAdmpLandingPage(true);
+	} else if(action == 'backToServerSettingsPage') {
+		g_form.clearMessages();
+		showAdmpAdminCredentialsPage(false);
+		showAdmpTechnicianAuthtokenPage(false);
+		showAdmpServerSettingsPage(true);
+	}
+}
+
+function showAdmpLandingPage(isShow) {
+	if (isShow) {
+		$j('#admp_landing_page').show();
+		setPageTitle('ADManager Plus-ServiceNow Integration');
+	} else {
+		$j('#admp_landing_page').hide();
+	}
+}
+
+function showAdmpServerSettingsPage(isShow) {
+	var backButton = g_form.getElement('back_button_in_header');
+	backButton.style.display = isShow ? 'block' : 'none';
+	backButton.setAttribute('onclick', isShow ? 'performAction("backToLandingPage")' : '');
+	setPageTitle(isShow ? 'ADManager Plus Server Settings' : '');
+
+	showUiMacro(false, 'server_settings_edit');
+	showRecordProducerVariable(isShow, 'admp_server_url', 'input');
+	showUiMacro(isShow, 'use_mid_server_switch');
+	document.getElementById('use_mid_server').checked = false;
+	showRecordProducerVariable(false, 'mid_server', 'input');
+	showRecordProducerVariable(false, 'server_settings_status', 'status');
+	showUiMacro(isShow, 'submit_server_settings');
+}
+
+function showAdmpAdminCredentialsPage(isShow) {
+	var backButton = g_form.getElement('back_button_in_header');
+	backButton.style.display = isShow ? 'block' : 'none';
+	backButton.setAttribute('onclick', isShow ? 'performAction("backToServerSettingsPage")' : '');
+	setPageTitle(isShow ? 'ADManager Plus Admin Credentials' : '');
+
+	showUiMacro(false, 'admin_credentials_edit');
+	showRecordProducerVariable(isShow, 'admp_username', 'input');
+	showRecordProducerVariable(isShow, 'admp_password', 'input');
+	showRecordProducerVariable(isShow, 'admp_domain', 'select');
+	showRecordProducerVariable(false, 'admin_credentials_status', 'status');
+	showUiMacro(isShow, 'submit_admin_credentials');
+}
+
+function showAdmpTechnicianAuthtokenPage(isShow, uiView) {
+	var backButton = g_form.getElement('back_button_in_header');
+	backButton.style.display = isShow ? 'block' : 'none';
+	backButton.setAttribute('onclick', isShow ? 'performAction("backToServerSettingsPage")' : '');
+	setPageTitle(isShow ? 'ADManager Plus Technician Authtoken' : '');
+
+	showUiMacro(false, 'technician_authtoken_hover_edit');
+	showUiMacro(false, 'technician_authtoken_config_edit');
+
+	if (isShow) {
+		if (uiView == "1") {
+			showUiMacro(false, 'technician_authtoken_edit');
+			showRecordProducerVariable(true, 'admp_authtoken', 'input');
+			enableRecordProducerVariable(true, 'admp_authtoken', 'input');
+			showRecordProducerVariable(false, 'admp_technician', 'input');
+			g_form.setDisplay('associated_roles', false);
+			showUiMacro(true, 'validate_technician_authtoken');
+			showUiMacro(false, 'submit_technician_authtoken');
+		} else if(uiView == "2") {
+			showUiMacro(true, 'technician_authtoken_edit');
+			showRecordProducerVariable(true, 'admp_authtoken', 'input');
+			enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+			showRecordProducerVariable(true, 'admp_technician', 'input');
+			enableRecordProducerVariable(false, 'admp_technician', 'input');
+			g_form.setDisplay('associated_roles', true);
+			showUiMacro(false, 'validate_technician_authtoken');
+			showUiMacro(true, 'submit_technician_authtoken');
+		}
+	} else {
+		showUiMacro(false, 'technician_authtoken_edit');
+		showRecordProducerVariable(false, 'admp_authtoken', 'input');
+		showRecordProducerVariable(false, 'admp_technician', 'input');
+		g_form.setDisplay('associated_roles', false);
+		showUiMacro(false, 'validate_technician_authtoken');
+		showUiMacro(false, 'submit_technician_authtoken');
+	}
+}
+
+function showConfigurationPage(uiView) {
+	var backButton = g_form.getElement('back_button_in_header');
+	backButton.style.display = 'none';
+	backButton.setAttribute('onclick', '');
+	$j('#admp_settings_button').show();
+	setPageTitle('Configuration');
+
+	showUiMacro(true, 'server_settings_edit');
+	showRecordProducerVariable(true, 'admp_server_url', 'input');
+	showUiMacro(true, 'use_mid_server_switch');
+	document.getElementById('use_mid_server').checked = false;
+	showRecordProducerVariable(false, 'mid_server', 'input');
+	showRecordProducerVariable(true, 'server_settings_status', 'status');
+	showUiMacro(false, 'submit_server_settings');
+
+	if (uiView == "1") {
+		showUiMacro(true, 'admin_credentials_edit');
+		showRecordProducerVariable(true, 'admp_username', 'input');
+		showRecordProducerVariable(false, 'admp_password', 'input');
+		showRecordProducerVariable(true, 'admp_domain', 'select');
+		showRecordProducerVariable(true, 'admin_credentials_status', 'status');
+		showUiMacro(false, 'submit_admin_credentials');
+	} else if(uiView == "2") {
+		showUiMacro(false, 'technician_authtoken_edit');
+		showUiMacro(false, 'technician_authtoken_config_edit');
+		showUiMacro(true, 'technician_authtoken_hover_edit');
+		showRecordProducerVariable(true, 'admp_authtoken', 'input');
+		showRecordProducerVariable(true, 'admp_technician', 'input');
+		g_form.setDisplay('associated_roles', false);
+		showUiMacro(false, 'validate_technician_authtoken');
+		showUiMacro(false, 'submit_technician_authtoken');
+	}
+}
+
+function showUpdateAdminCredentialsPage(isShow) {
+	var serverSettings = admpGlobal.existingServerSettings;
+	if (isShow) {
+		showRecordProducerVariable(true, 'admp_username', 'input');
+		enableRecordProducerVariable(false, 'admp_username', 'input');
+		g_form.setValue('admp_username', serverSettings.admpUsername);
+		showRecordProducerVariable(true, 'admp_domain', 'select');
+		enableRecordProducerVariable(false, 'admp_domain', 'select');
+		g_form.addOption('admp_domain', serverSettings.admpDomain, serverSettings.admpDomain);
+		showRecordProducerVariable(true, 'admin_credentials_status', 'status');
+		enableRecordProducerVariable(false, 'admin_credentials_status', 'status');
+		g_form.setValue('admin_credentials_status', serverSettings.adminCredentialsStatus);
+	} else {
+		showRecordProducerVariable(false, 'admp_username', 'input');
+		showRecordProducerVariable(false, 'admp_domain', 'select');
+		showRecordProducerVariable(false, 'admin_credentials_status', 'status');
+	}
+}
+
+
+function showUpdateTechnicianAuthtokenPage(isShow) {
+	var serverSettings = admpGlobal.existingServerSettings;
+	if (isShow) {
+		showRecordProducerVariable(true, 'admp_authtoken', 'input');
+		enableRecordProducerVariable(false, 'admp_authtoken', 'input');
+		g_form.setValue('admp_authtoken', "************************************");
+		showRecordProducerVariable(true, 'admp_technician', 'input');
+		enableRecordProducerVariable(false, 'admp_technician', 'input');
+		var admpTechnician = serverSettings.admpDomain + "\\" + serverSettings.admpUsername;
+		g_form.setValue('admp_technician', admpTechnician);
+	} else {
+		showRecordProducerVariable(false, 'admp_authtoken', 'input');
+		showRecordProducerVariable(false, 'admp_technician', 'input');
+	}
+}
+
+function showRecordProducerVariable(isShow, name, type) {
+	if (type == 'input') {
+		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearValue(name);
+	} else if(type == 'select') {
+		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearOptions(name);
+	} else if(type == 'status') {
+		g_form.setDisplay(name, isShow);
+	}
+}
+
+function enableRecordProducerVariable(isEnable, name, type) {
+	if(type == 'switch') {
+		$j('#' + name).attr('disabled', !isEnable);
+		return;
+	}
+	g_form.setMandatory(name, isEnable);
+	g_form.setReadOnly(name, !isEnable);
+	if(name == 'mid_server') {
+		var id = 'sys_display.' + g_form.getElement('mid_server').id;
+		document.getElementById(id).style.backgroundColor = (!isEnable)? '#f4f4f4': '#fff';
+		document.getElementById(id).style.border = (!isEnable)? '1px solid #ddd' :'1px solid #bec1c6';
+		return;
+	}
+	g_form.getElement(name).style.backgroundColor = (!isEnable)? '#f4f4f4': '#fff';
+	g_form.getElement(name).style.border = (!isEnable)? '1px solid #ddd' :'1px solid #bec1c6';
+}
+
+function showUiMacro(isShow, uiMacroName, elementClass) {
+	// variable name in record producer and element class in UI Macro are set the same
+	if(elementClass == null) elementClass = uiMacroName;
+	// var ele = document.getElementById(g_form.getControl(uiMacroName).id).querySelector('.' + elementClass);
+	var macro = g_form.getElement(uiMacroName);
+	if (!macro)  {
+		var id = getMacroVsId().get(uiMacroName);
+		macro = document.getElementById(id);
+	}
+	var ele = macro.querySelector('.' + elementClass);
+	g_form.setDisplay(uiMacroName, isShow);
+	if(elementClass != 'server_settings_edit' && elementClass != 'admin_credentials_edit' && elementClass != 'technician_authtoken_hover_edit')
+		ele.style.display = isShow ? 'block' : 'none'; 
+	ele.parentElement.style.overflow = 'visible';
+	ele.parentElement.style.minHeight = '0px';
+	// ele.parentElement.previousSibling.innerHTML = '';
+}
+
+function getMacroVsId() {
+	var macroVsId = new Map();
+	macroVsId.set("server_settings_edit", "macro_IO:991ff493db0eb4105ce09db2ca96191c");
+	macroVsId.set("use_mid_server_switch", "macro_IO:649a91dadb8af0105ce09db2ca961926");
+	macroVsId.set("submit_server_settings", "macro_IO:97dcd15edb8af0105ce09db2ca9619bd");
+	macroVsId.set("admin_credentials_edit", "macro_IO:d94f3893db0eb4105ce09db2ca9619c6");
+	macroVsId.set("submit_admin_credentials", "macro_IO:df1d9ddadb8af0105ce09db2ca9619f9");
+	macroVsId.set("technician_authtoken_edit", "macro_IO:fae6bd462f741110f0492aa62799b617");
+	macroVsId.set("technician_authtoken_config_edit", "macro_IO:3c43c84497175110d96d79100153af88");
+	macroVsId.set("technician_authtoken_hover_edit", "macro_IO:c279c66d2f051110f0492aa62799b6a7");
+	macroVsId.set("associated_roles", "macro_IO:4889f18a2f741110f0492aa62799b6a6");
+	macroVsId.set("validate_technician_authtoken", "macro_IO:1ef178882f051110f0492aa62799b66e");
+	macroVsId.set("submit_technician_authtoken", "macro_IO:ccaf39022fb41110f0492aa62799b61a");
+	return macroVsId;
+}
+
+function setPageTitle(title) {
+	if(!title) {
+		return;
+	}
+	var titleElement = $j("tr.header.sc_header td.sc_header_main_cell span[role='heading']");
+	titleElement.css('white-space', 'pre');
+	titleElement.text(title);
+}
+// ---------------------------------------Show/Hide ends-------------------------------------------------
+// ---------------------------------------Encryption/Decryption starts------------------------------------------------
+function encryptAuthtoken(authToken, key) {
+	var encryptedMessage = CryptoJS.AES.encrypt(authToken, key);
+	return encryptedMessage.toString();
+}
+
+function encryptAuthtokenWithPublicKey(authToken, publicKey) {
+	var jsEncryptObj = new JSEncrypt();
+	jsEncryptObj.setPublicKey(publicKey);
+	var encryptedAuthToken = jsEncryptObj.encrypt(authToken);
+	return encryptedAuthToken;
+}
+// ---------------------------------------Encryption/Decryption ends------------------------------------------------------
+function scrollToTop() {
+	$j('html,body').animate({scrollTop:0},0);
+}
+
+function removeTrailingSlash(str) {
+	return str.replace(/\/+$/, '');
+}
+
+function deleteMidServerAndTables() {
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","deleteMidServerAndTables");
+	configurationHandler.getXMLAnswer(deleteMidServerAndTables);
+	function deleteMidServerAndTables() {
+	}
+}]]></script>
+        <script_name>ADManagerConfiguration</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-17 12:02:26</sys_created_on>
+        <sys_id>836749dddb8630105ce09db2ca961929</sys_id>
+        <sys_mod_count>532</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerConfiguration</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_836749dddb8630105ce09db2ca961929</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-04-20 10:11:48</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

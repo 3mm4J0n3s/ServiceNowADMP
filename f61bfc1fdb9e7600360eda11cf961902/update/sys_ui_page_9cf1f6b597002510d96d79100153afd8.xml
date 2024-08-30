@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description>ADManager Plus Create User Form Customization</description>
+        <direct>false</direct>
+        <endpoint>x_manen_admanager_ADManagerCreateUserForm.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<script src="x_manen_admanager.ADManagerCreateUser.jsdbx"></script>
+	<link href="fb35d1f7dbfbfac0360eda11cf961997.cssdbx" rel="stylesheet" type="text/css"/>
+	<div class="int-form-horizontal" id="form_createUser">
+		<div class="form-group is-required" id="div_domainName">
+			<label class="control-label int-make-block int-mb-8">
+				Select Domain
+				<span class="required-marker"></span>
+			</label>
+			<div class="int-w-560">
+				<select class="form-control" id="select_domainName">
+				</select>
+			</div>
+		</div>
+		<div class="form-group is-required" id="div_templateName">
+			<label class="control-label int-make-block int-mb-8">
+				Select Template
+				<span class="required-marker"></span>
+			</label>
+			<div class="int-w-560">
+				<select class="form-control" id="select_templateName">
+				</select>
+			</div>
+		</div>
+	</div>
+</j:jelly>]]></html>
+        <name>ADManagerCreateUserForm</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-29 11:33:02</sys_created_on>
+        <sys_id>9cf1f6b597002510d96d79100153afd8</sys_id>
+        <sys_mod_count>55</sys_mod_count>
+        <sys_name>ADManagerCreateUserForm</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_page_9cf1f6b597002510d96d79100153afd8</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-01-03 05:15:26</sys_updated_on>
+    </sys_ui_page>
+</record_update>

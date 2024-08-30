@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerAPIUtil</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>ADManager API Util</description>
+        <name>ADManagerAPIUtil</name>
+        <script><![CDATA[var ADManagerAPIUtil = Class.create();
+ADManagerAPIUtil.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	/* Create a new user in AD
+     * Params : userDetails JSON, domainName
+     */
+    createSingleUser: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+       
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		var domainName = this.getParameter('domainName');
+		var userDetails = this.getParameter('userDetails');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+            sm = new sn_ws.RESTMessageV2("ADManagerCreateUser", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			// setStringParameterNoEscape for JSON String
+            sm.setStringParameterNoEscape('inputFormat', userDetails);
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000); 
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+	/* Delete a AD User.
+     * Params : domainName, inputFormat;
+     */
+    deleteUser: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+        
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+        var domainName = this.getParameter('domainName');
+        var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2("ADManagerDeleteUser", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+	/* Enable a AD User.
+     * Params : domainName, inputFormat;
+     */  
+    enableUser: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+
+        var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+        var domainName = this.getParameter('domainName');
+        var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2("ADManagerEnableUser", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('authToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+    /* Disable a AD User.
+     * Params : domainName, inputFormat;
+     */
+    disableUser: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+       
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		var domainName = this.getParameter('domainName');
+		var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2("ADManagerDisableUser", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('authToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000); 
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+    /* Unlock a AD User.
+     * Params : domainName, inputFormat;
+     */
+    unlockUser: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+		
+        var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+        var domainName = this.getParameter('domainName');
+        var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2("ADManagerUnlockUser", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+    /* Reset password for a AD User.
+     * Params : domainName, inputFormat;
+     */
+    resetPwd: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+        
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+        var domainName = this.getParameter('domainName');
+        var password = this.getParameter('password');
+        var mustChangePassword = this.getParameter('mustChangePassword');
+        var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2("ADManagerResetPwd", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('pwd', password);
+            sm.setStringParameter('mustChangePassword', mustChangePassword);
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+	modifyDepartment: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		var domainName = this.getParameter('domainName');
+		var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+			var endpoint = "ADManagerModifyUser";
+			if(buildNumber && buildNumber >= 7180) endpoint = "ADManagerModifyDepartment";
+			sm = new sn_ws.RESTMessageV2(endpoint, "POST");
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setQueryParameter("PRODUCT_NAME", "ServiceNow");
+			sm.setQueryParameter("AuthToken", authToken);
+			sm.setQueryParameter('domainName', domainName);
+			sm.setQueryParameter('inputFormat', inputFormat);
+			if (buildNumber && buildNumber >= 7163) {
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		return new global.JSON().encode(responseJSON);
+	},
+	modifyManager: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		var domainName = this.getParameter('domainName');
+		var inputFormat = this.getParameter('inputFormat');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+			var endpoint = "ADManagerModifyUser";
+			if(buildNumber && buildNumber >= 7180) endpoint = "ADManagerModifyManager";
+			sm = new sn_ws.RESTMessageV2(endpoint, "POST");
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setQueryParameter("PRODUCT_NAME", "ServiceNow");
+			sm.setQueryParameter("AuthToken", authToken);
+			sm.setQueryParameter('domainName', domainName);
+			sm.setQueryParameter('inputFormat', inputFormat);
+			if (buildNumber && buildNumber >= 7163) {
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		return new global.JSON().encode(responseJSON);
+	},
+    addRemoveGroups: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+
+        var domainName = this.getParameter('domainName');
+        var inputFormat = this.getParameter('inputFormat');
+        var addGroup = this.getParameter('addGroup');
+        var removeGroup = this.getParameter('removeGroup');
+        //var primaryGroup = this.getParameter('primaryGroup');
+        var objectType = this.getParameter('objectType');
+        var isRemoveFromAllGroup = this.getParameter('isRemoveFromAllGroup');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+            sm = new sn_ws.RESTMessageV2("ADManagerAddRemoveGroups", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameter('objectType', objectType);
+            if (addGroup != null) {
+                sm.setStringParameterNoEscape('addGroup', addGroup);
+            } else {
+                sm.setStringParameterNoEscape('addGroup', []);
+            }
+            if (removeGroup != null) {
+                sm.setStringParameterNoEscape('removeGroup', removeGroup);
+                sm.setStringParameter('isRemoveFromAllGroup', isRemoveFromAllGroup);
+            } else {
+                sm.setStringParameterNoEscape('removeGroup', []);
+                sm.setStringParameter('isRemoveFromAllGroup', false);
+            }
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+            sm.setStringParameterNoEscape('inputFormat', inputFormat);
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            var response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+    setFolderPermissions: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+        
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+
+        var domainName = this.getParameter('domainName');
+        var folders = this.getParameter('folders');
+        var PERMISSION_COMPONENT = this.getParameter('PERMISSION_COMPONENT');
+        var actionId = this.getParameter('actionId');
+        var revertDuration = this.getParameter('revertDuration');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+            sm = new sn_ws.RESTMessageV2("ADManagerSetFolderPermissions", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('folders', folders);
+            sm.setStringParameterNoEscape('PERMISSION_COMPONENT', PERMISSION_COMPONENT);
+            if (revertDuration != "Forever") sm.setStringParameterNoEscape('revertDuration', revertDuration);
+            sm.setStringParameter('actionId', actionId);
+            if (actionId != 1) {
+                sm.setStringParameter('actionValueId', this.getParameter('actionValueId'));
+                sm.setStringParameter('actionValue', this.getParameter('actionValue'));
+            }
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            var response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+    removeFolderPermissions: function() {
+		var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+        
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var selfAuthToken =  new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+        var domainName = this.getParameter('domainName');
+        var folders = this.getParameter('folders');
+        var PERMISSION_COMPONENT = this.getParameter('PERMISSION_COMPONENT');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		if(encryptedAuthToken) {
+			selfAuthToken = encryptedAuthToken;
+		}
+        try {
+            sm = new sn_ws.RESTMessageV2("ADManagerRemoveFolderPermissions", "post");
+			sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', selfAuthToken);
+            sm.setStringParameter('domainName', domainName);
+            sm.setStringParameterNoEscape('folders', folders);
+            sm.setStringParameterNoEscape('PERMISSION_COMPONENT', PERMISSION_COMPONENT);
+            sm.setStringParameter('HANDSHAKE_KEY', this.getHandshakeKey());
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            var response = sm.execute();
+			
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        return new global.JSON().encode(responseJSON);
+    },
+	getHandshakeKey: function() {
+		return new ADManagerHSKeyAuthenticator().getHSKey(true);
+    },
+    type: 'ADManagerAPIUtil'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-04-28 09:49:04</sys_created_on>
+        <sys_id>dea58d9bdbde7600360eda11cf96192b</sys_id>
+        <sys_mod_count>124</sys_mod_count>
+        <sys_name>ADManagerAPIUtil</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_dea58d9bdbde7600360eda11cf96192b</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-22 05:37:05</sys_updated_on>
+    </sys_script_include>
+</record_update>

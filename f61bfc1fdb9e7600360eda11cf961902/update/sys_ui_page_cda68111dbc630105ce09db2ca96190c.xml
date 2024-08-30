@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script/>
+        <description>ADManager Configuration</description>
+        <direct>false</direct>
+        <endpoint>x_manen_admanager_ADManagerConfiguration.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<link href="9d07c511dbc630105ce09db2ca961977.cssdbx" rel="stylesheet" type="text/css"/>
+	<script src="x_manen_admanager.JSEncrypt.jsdbx"></script>
+	<script src="x_manen_admanager.CryptoJS.jsdbx"></script>
+	<script src="x_manen_admanager.ADManagerConfiguration.jsdbx"></script>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerFreezeWindow"/>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerConfirmModal"/>
+	<g:macro_invoke macro="x_manen_admanager_ADManagerSettings"/>
+	<div id="admp_landing_page" style="display: block;">
+		<div class="sn-integration-base">
+			<div class="extend-sn-cpb">
+				<h2>Collaborative identity and access management with <strong>ServiceNow</strong> and ManageEngine <strong>ADManager Plus</strong></h2>
+				<hr/>
+				<div class="ex-sn-cmpr">
+					<img src="admp-servicenow-integration.png" width="500"/>
+				</div>
+				<div class="ex-sn-cmpr-footer">
+					<button type="button" class="btn btn-primary"  onclick="performAction('downloadAdmp');">
+						<i class="admp-sn-sprite icn-download"></i>Download ADManager Plus
+					</button>
+					<button type="button" class="btn btn-default" id="admp_integrate_now" onclick="performAction('integrateNow', event);">
+						Integrate Now! 
+						<span class="popover__wrapper"><i class="admp-sn-sprite icn-help-sm popover__title"></i>
+							<div class="popover__content">
+								<div class="popover__header">
+									<strong>Integration Steps</strong>
+									<ul>
+										<li style="display: none"><a target="_blank" href="#">Benefits</a></li>
+										<li><a target="_blank" href="https://www.manageengine.com/products/ad-manager/integrate-servicenow-with-admanagerplus.html?utm_source=servicenow">Help</a></li>
+									</ul>
+								</div>
+								<div class="popover__body">
+									<ol>
+										<li>Enter the URL to access ADManager Plus</li>
+										<li>Enter the admin credentials, and domain name.</li>
+									</ol>
+								</div>
+							</div>   
+						</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</j:jelly>]]></html>
+        <name>ADManagerConfiguration</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-17 12:05:04</sys_created_on>
+        <sys_id>cda68111dbc630105ce09db2ca96190c</sys_id>
+        <sys_mod_count>42</sys_mod_count>
+        <sys_name>ADManagerConfiguration</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_page_cda68111dbc630105ce09db2ca96190c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2022-08-12 08:56:11</sys_updated_on>
+    </sys_ui_page>
+</record_update>

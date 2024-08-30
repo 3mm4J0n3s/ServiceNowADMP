@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="f484ca29978ca110d96d79100153af96" label="ADManagerUserCreationFormFields" max_length="40" name="x_manen_admanager_admanagerusercreationformfields" type="collection">
+        <element attributes="edge_encryption_enabled=true" label="Is Selected" max_length="40" name="is_selected" type="boolean"/>
+        <element label="Display Name" max_length="100" name="display_name" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="Max Length" max_length="40" name="max_length" type="integer"/>
+        <element attributes="edge_encryption_enabled=true" label="Order" max_length="40" name="order" type="integer"/>
+        <element attributes="edge_encryption_enabled=true" label="Is Mandatory" max_length="40" name="is_mandatory" type="boolean"/>
+        <element label="Field Type" max_length="100" name="field_type" type="string"/>
+        <element label="Ldap Name" max_length="100" name="ldap_name" type="string"/>
+    </element>
+</database>

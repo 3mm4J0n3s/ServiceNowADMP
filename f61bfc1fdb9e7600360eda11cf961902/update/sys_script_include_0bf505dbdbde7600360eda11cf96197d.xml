@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerCommonUtil</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>ADManager Common Util</description>
+        <name>ADManagerCommonUtil</name>
+        <script><![CDATA[var ADManagerCommonUtil = Class.create();
+ADManagerCommonUtil.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+    getAuthInfo: function() {
+        var responseJSON = {};
+        var requestBody, responseBody, responseCode, sm;
+        var actionId = this.getParameter('action_id');
+        var is_requester = this.getParameter('is_requester');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+        var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+        var authToken = new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+
+        // allow servicenow users to perform read operations with admin authtoken, if requester role
+        if (is_requester == 'true') {
+            authToken = new ADManagerConfigurationHandler().getAdminAuthToken();
+        }
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+        try {
+            //  Might throw exception if message doesn't exist or not visible due to scope.
+            sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetAuthInfo', 'GetAuthInfo');
+            sm.setStringParameter('url', admpServerUrl);
+            sm.setStringParameter('AuthToken', authToken);
+			if (buildNumber && buildNumber >= 7163) {
+                sm.setQueryParameter("isAuthEncrypted", "true");
+            }
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+            sm.setHttpTimeout(30000);
+            sm.setEccParameter('skip_sensor', 'true');
+            //  Might throw exception if http connection timed out or some issue with sending request itself because of encryption/decryption of password.
+            var response = sm.execute();
+            responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+            responseCode = response.getStatusCode();
+        } catch (ex) {
+            responseBody = ex.getMessage();
+            responseCode = '500';
+        } finally {
+            requestBody = sm ? sm.getRequestBody() : null;
+        }
+        //  ADManagerErrorhandler will check the response & throw proper error.
+
+        responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+        if (responseCode == "0" || responseCode == "500") {
+            responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+        }
+        if (responseJSON.status == 'false') {
+            return new global.JSON().encode(responseJSON);
+        }
+
+        var admpAuthObject = JSON.parse(JSON.parse(responseJSON.responseBody).AdmpAuthObject);
+        var domainNameList = admpAuthObject.domainNameList;
+        var domainsVsActionList = admpAuthObject.domainsVsActionList;
+
+        var authorizedDomainList = [];
+        for (var domainName in domainsVsActionList) {
+            var actionList = JSON.parse(domainsVsActionList[domainName]);
+            for (var i = 0; i < actionList.length; i++) {
+                if (actionList[i] == actionId) {
+                    authorizedDomainList.push(this.getDomainObject(domainNameList, domainName));
+                }
+            }
+        }
+        if (authorizedDomainList.length == 0) {
+            responseJSON.status = 'false';
+            responseJSON.responseBody = 'You are not authorized to perform this action.';
+        }
+
+        responseJSON.authorizedDomainList = authorizedDomainList;
+        responseJSON.domainNameList = domainNameList;
+
+
+        var sys_id = this.getParameter('sys_id');
+
+        if (sys_id != null) {
+            var requestDetails = {};
+            requestDetails = new ADManagerIncidentHandler().getIncidentDetails(sys_id);
+            requestDetails = new global.JSON().decode(requestDetails);
+            responseJSON.requestDetails = requestDetails;
+        }
+
+        return new global.JSON().encode(responseJSON);
+    },
+
+    getDomainObject: function(domainNameList, domainName) {
+        for (var i = 0; i < domainNameList.length; i++) {
+            if (domainNameList[i].DOMAIN_NAME == domainName) {
+                return domainNameList[i];
+            }
+        }
+        return null;
+    },
+    /* Fetch all template list from ADManager
+     * Params : -
+     */
+	getTemplateList: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var domainName = this.getParameter('domainName');
+		var is_requester = this.getParameter('is_requester');
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken = new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+
+		// allow servicenow users to perform read operations with admin authtoken, if requester role
+		if (is_requester == 'true') {
+			authToken = new ADManagerConfigurationHandler().getAdminAuthToken();
+		}
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+			sm = new sn_ws.RESTMessageV2("ADManagerTemplateNames", "post");
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('AuthToken', authToken);
+			sm.setStringParameter('domainName', domainName);
+			if (buildNumber && buildNumber >= 7163) {
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if (responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+
+		return new global.JSON().encode(responseJSON);
+	},
+	
+	getDepartmentList: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		var is_requester = this.getParameter('is_requester');
+		
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		var authToken = new ADManagerAssociateUserHandler().getAuthToken(gs.getUserID());
+		// allow servicenow users to perform read operations with admin authtoken, if requester role
+		if (is_requester == 'true') {
+			authToken = new ADManagerConfigurationHandler().getAdminAuthToken();
+		}
+		if(encryptedAuthToken) {
+			authToken = encryptedAuthToken;
+		}
+		try {
+			// Might throw exception if message doesn't exist or not visible due to scope.
+			var endpoint = 'ADManagerGetDepartmentList';
+			if(buildNumber >= 7180) endpoint = 'ADManagerGetOrganizationAttributes';
+			sm = new sn_ws.RESTMessageV2(endpoint, 'GET');
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setQueryParameter("PRODUCT_NAME", "ServiceNow");
+			sm.setQueryParameter("AuthToken", authToken);
+			if(buildNumber && buildNumber >= 7180) {
+				sm.setQueryParameter("TypeFilter", "[{type:DEPT}]");
+			}
+			if(buildNumber && buildNumber >= 7163) {
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			response = sm.execute();
+
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if (responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+
+		return new global.JSON().encode(responseJSON);
+	},
+
+	getProductVersion: function() {
+		var responseJSON = {};
+		var is_requester = this.getParameter('is_requester');
+		var configurationHandler = new ADManagerConfigurationHandler();
+		var associateUserHandler = new ADManagerAssociateUserHandler();
+		
+		var productVersionResponse = configurationHandler.getAdmpProductVersion();
+		if (productVersionResponse.status == 'false') {
+			responseJSON = productVersionResponse;
+			return new global.JSON().encode(responseJSON);
+		}
+		var buildNumber = parseInt(JSON.parse(productVersionResponse.responseBody).BUILD_NUMBER);
+		if (buildNumber < 7163) {
+			responseJSON = productVersionResponse;
+			responseJSON.buildNumber = buildNumber;
+			return new global.JSON().encode(responseJSON);
+		} else if (buildNumber >= 7163) {
+			var publicKeyResponse = configurationHandler.getAdmpPublicKey();
+			if (publicKeyResponse.status == 'false') {
+				responseJSON = publicKeyResponse;
+				return new global.JSON().encode(responseJSON);
+			}
+			var authToken = (is_requester == 'true')?configurationHandler.getAdminAuthToken():associateUserHandler.getAuthToken(gs.getUserID());
+			var key = (is_requester == 'true')?configurationHandler.getAdmpAdminUserName():gs.getUserID();
+			responseJSON = publicKeyResponse;
+			responseJSON.buildNumber = buildNumber;
+			responseJSON.authToken = authToken.toString();
+			responseJSON.key = key.toString();
+			return new global.JSON().encode(responseJSON);
+		}
+	},
+
+    type: 'ADManagerCommonUtil'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2017-04-28 09:50:16</sys_created_on>
+        <sys_id>0bf505dbdbde7600360eda11cf96197d</sys_id>
+        <sys_mod_count>72</sys_mod_count>
+        <sys_name>ADManagerCommonUtil</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_0bf505dbdbde7600360eda11cf96197d</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-22 07:21:35</sys_updated_on>
+    </sys_script_include>
+</record_update>

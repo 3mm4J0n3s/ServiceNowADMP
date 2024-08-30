@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>ADManager Plus Switches for Settings</description>
+        <media_type/>
+        <name>ADManagerSwitches</name>
+        <scoped_name>x_manen_admanager_ADManagerSwitches</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-20 15:59:09</sys_created_on>
+        <sys_id>ebd9199adb8af0105ce09db2ca961908</sys_id>
+        <sys_mod_count>6</sys_mod_count>
+        <sys_name>ADManagerSwitches</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_macro_ebd9199adb8af0105ce09db2ca961908</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-08-24 08:15:55</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<div class="use_mid_server_switch" style="display: none">
+		<label for="use_mid_server"> Use MID Server</label>
+		<div class="input-switch">
+			<input id="use_mid_server" type="checkbox" name="use_mid_server" onchange="switchUseMIDServer();"/>
+			<label aria-hidden="true" class="switch" for="use_mid_server"></label>
+		</div>
+	</div>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>
