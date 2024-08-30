@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_list parent="" relationship="" sys_domain="global" table="x_manen_admanager_admanagertechnicians" version="2" view="sys_ref_list">
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>display_name</element>
+            <list_id display_value="x_manen_admanager_admanagertechnicians" element="NULL" name="x_manen_admanager_admanagertechnicians" parent="NULL" relationship="NULL" sys_domain="global" view="06be0732db022200f71ada11cf961931">c67cc2fc2f5dd110f0492aa62799b693</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>0</position>
+            <sum>false</sum>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2022-08-11 13:21:52</sys_created_on>
+            <sys_id>ca7cc2fc2f5dd110f0492aa62799b696</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2022-08-11 13:21:52</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element/>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <name>x_manen_admanager_admanagertechnicians</name>
+            <parent/>
+            <position/>
+            <relationship/>
+            <sum>false</sum>
+            <sys_class_name>sys_ui_list</sys_class_name>
+            <sys_created_by>admin</sys_created_by>
+            <sys_created_on>2022-08-11 13:21:52</sys_created_on>
+            <sys_customer_update>false</sys_customer_update>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>c67cc2fc2f5dd110f0492aa62799b693</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>x_manen_admanager_admanagertechnicians</sys_name>
+            <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+            <sys_policy/>
+            <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+            <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+            <sys_update_name>sys_ui_list_x_manen_admanager_admanagertechnicians_sys_ref_list</sys_update_name>
+            <sys_updated_by>admin</sys_updated_by>
+            <sys_updated_on>2022-08-11 13:21:52</sys_updated_on>
+            <sys_user/>
+            <view display_value="Reference List" name="sys_ref_list">06be0732db022200f71ada11cf961931</view>
+            <view_name/>
+        </sys_ui_list>
+    </sys_ui_list>
+</record_update>

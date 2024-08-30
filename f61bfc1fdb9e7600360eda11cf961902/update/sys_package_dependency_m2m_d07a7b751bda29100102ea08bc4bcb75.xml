@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
+    <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
+        <dependency display_value="System Import Data Source" source="com.glide.system_import_data_source">744fcf32db022200f71ada11cf961969</dependency>
+        <min_version>1.0.0</min_version>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-04-20 13:10:13</sys_created_on>
+        <sys_id>d07a7b751bda29100102ea08bc4bcb75</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-04-20 13:10:13</sys_updated_on>
+    </sys_package_dependency_m2m>
+</record_update>

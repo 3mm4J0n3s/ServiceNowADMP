@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager Plus Associate User Script</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerAssociateUser</name>
+        <script><![CDATA[$j(document).ready(function() {
+	
+});
+
+var associatedUsers = null;
+var deletedTechnicians = null;
+var admpGlobal = {
+	authToken: '',
+	technician: {},
+	isAuthEncrypted: false,
+	isEdit: false,
+	buildNumber : '',
+	publicKey: '',
+	encryptedAuthToken: '',
+};
+var AUTH_ENCRYPTED_BUILD = 7163;
+
+function loadAssociatedUsers() {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "getBuildNumberAndAssociatedUsers");
+	technicianHandler.getXMLAnswer(getBuildNumberAndAssociatedUsers);
+	function getBuildNumberAndAssociatedUsers(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		admpGlobal.buildNumber = response.buildNumber;
+		if(response.buildNumber < AUTH_ENCRYPTED_BUILD) {
+			if(response.status == "false") {
+				g_form.addErrorMessage(response.responseBody);
+			} else if(response.status == "true") {
+				associatedUsers = response.associatedUsers;
+				deletedTechnicians = response.deletedTechnicians;
+				displayAssociatedUsers();
+			}
+		} else if(response.buildNumber >= AUTH_ENCRYPTED_BUILD) {
+			var getPublicKeyResponse = JSON.parse(response.responseBody);
+			if(getPublicKeyResponse.status == "0") {
+				g_form.addErrorMessage(getPublicKeyResponse.statusMessage);
+// 				associatedUsers = response.associatedUsers;
+// 				deletedTechnicians = response.deletedTechnicians;
+// 				displayAssociatedUsers();
+			} else if(getPublicKeyResponse.status == "1") {
+				var publicKey = getPublicKeyResponse.publicKey;
+				var authToken = response.authToken;
+				var key = response.key;
+				if(!checkIfValidUUID(authToken, true)) {
+					authToken = decryptAuthtoken(authToken, key);
+				}
+				var encryptedAuthToken = encryptAuthtokenWithPublicKey(authToken, publicKey);
+				admpGlobal.publicKey = publicKey;
+				admpGlobal.encryptedAuthToken = encryptedAuthToken;
+				getAllTechniciansWithEncryptedAuth();
+			}
+		}
+	}
+}
+
+function getAllTechniciansWithEncryptedAuth() {
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "getAllTechniciansWithEncryptedAuth");
+	technicianHandler.addParam("buildNumber", admpGlobal.buildNumber);
+	technicianHandler.addParam("encryptedAuthToken", admpGlobal.encryptedAuthToken);
+	technicianHandler.addParam("getAssociatedUsers", 'true');
+	technicianHandler.getXMLAnswer(getAllTechniciansWithEncryptedAuth);
+	function getAllTechniciansWithEncryptedAuth(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status =="true") {
+			associatedUsers = response.associatedUsers;
+			deletedTechnicians = response.deletedTechnicians;
+			displayAssociatedUsers();
+		}
+	}
+}
+
+function displayAssociatedUsers() {
+	var html = '';
+	if(associatedUsers.length > 0) {
+		for(var i = 0; i < associatedUsers.length; i++) {
+			// check if technician exists in ADMP
+			var title = '';
+			if(deletedTechnicians.indexOf(associatedUsers[i].admp_technician_login_id) > -1) {
+				title = 'Action needed: This ADMP technician has been deleted in ADManager Plus.';
+			}
+			
+			if(i % 2 == 1) {
+				html += '<tr class="list_row list_odd" title=\'' + title + '\'>';
+			}
+			else {
+				html += '<tr class="list_row list_even" title=\'' + title + '\'>';
+			}
+			
+			html += '<td class="vt vt-spacer">' + escapeHtml(associatedUsers[i].admp_technician_full_name) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(associatedUsers[i].admp_technician_domain_name) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(associatedUsers[i].admp_technician_role_name) + '</td>';
+			html += '<td class="vt vt-spacer">' + escapeHtml(associatedUsers[i].servicenow_user_name) + '</td>';
+			html += '<td class="vt vt-spacer"><a style="color: #448ee1;" onClick="openEditAssociation(\''+associatedUsers[i].association_sys_id+'\',\''+associatedUsers[i].technician_sys_id+'\');">Edit</a>&nbsp&nbsp<a data-toggle="modal" data-target="#admp_confirm_modal" style="color: #448ee1;" onClick="openDeleteDisassociation(\''+associatedUsers[i].servicenow_sys_id+'\',\''+associatedUsers[i].technician_sys_id+'\');">Disassociate</a></td>';
+			html += '</tr>';
+		}
+	}
+	else {
+		html += '<tr class="list2_no_records"><td colspan="5">No records to display</td></tr>';
+	}
+
+	$j("#associated_user_list_body").html(html);
+	showAssociatedUserList(true);
+}
+
+function escapeHtml(str) {
+	return String(str).replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
+		return '&#'+i.charCodeAt(0)+';';
+	});
+}
+// ----------------------------------------------Associated Roles starts----------------------------------
+function loadAssociatedRoles(admpTechnician) {
+	var associatedRolesElement, admpRoleNameElement, admpRolesBodyElement, moreDetailsElement;
+	if(!admpTechnician) {
+		admpTechnician = JSON.parse(g_form.getValue('admp_technician'));
+		associatedRolesElement = $j('#associated_roles');
+		admpRoleNameElement = $j("#admp_role_name");
+		admpRolesBodyElement = $j("#admp_roles_body");
+		moreDetailsElement = $j("#more_details");
+	} else {
+		associatedRolesElement = $j('#associated_roles_new');
+		admpRoleNameElement = $j("#admp_role_name_new");
+		admpRolesBodyElement = $j("#admp_roles_body_new");
+		moreDetailsElement = $j("#more_details_new");
+	}
+	admpRoleNameElement.text(" " + admpTechnician.ADMP_ROLE_NAME.valueStr + "  ");
+	var roles = admpTechnician.ADMP_ROLE_NAME.values;
+	var html = '';
+	
+	for(var row = 0; row < roles.length; row++) {
+		html += "<tr>";
+		html += "<td>" + escapeHtml(roles[row].ADMP_ROLE_NAME) + "</td>";
+		html += "<td>" + escapeHtml(roles[row].ADMP_DOMAIN_NAME) + "</td>";
+		html += "</tr>";
+	}
+	admpRolesBodyElement.html(html);
+	
+	// handle UI to solve the margin, padding and overflow problem
+	associatedRolesElement.parent().css('overflow', 'visible');
+	associatedRolesElement.parent().css('min-height', '10px');
+	associatedRolesElement.parent().siblings("div[id*='label_IO:']").empty();
+	associatedRolesElement.parents("div.row.sc-row").css('margin-top', '0px');
+	
+	moreDetailsElement.off('click');
+	$j(".roles-popup").off('toggle');
+	moreDetailsElement.on('click', function() {
+		$j(".roles-popup").toggle(200);
+	});
+}
+
+function rolesPopupEventListener() {
+	// hide the associated roles popup when clicked anywhere in the document but the popup.
+	$j(document).mouseup(function (e) {
+		var container = $j(".roles-popup-container"); 
+		if(!container.is(e.target) &&  container.has(e.target).length === 0) {
+			$j(".roles-popup").hide(); 
+		} 
+	});
+}
+// ----------------------------------------------Associated Roles ends-----------------------------------
+// ----------------------------------------------Add new association starts------------------------------------
+
+function openNewAssociation() {
+	g_form.clearMessages();
+	var admpBuildNumber = admpGlobal.buildNumber;
+	if(admpBuildNumber == -1) {
+		g_form.addErrorMessage("Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.");
+		return;
+	}
+	if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+		admpGlobal.isAuthEncrypted = true;
+		showAssociatedUserList(false);
+		showAssociateUserForm(true, true, true);
+		g_form.clearValue('servicenow_user');
+		g_form.clearValue('authToken');
+		return;
+	}
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "getAllTechnicianDetails");
+	technicianHandler.getXMLAnswer(getAllTechnicianDetails);
+	function getAllTechnicianDetails(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			showAssociatedUserList(false);
+			showAssociateUserForm(true, true, false);
+			var technicianList = JSON.parse(response.responseBody);
+			g_form.clearOptions('admp_technician');
+			g_form.clearValue('servicenow_user');
+			g_form.clearValue('authToken');
+			for(var i = 0; i < technicianList.length; i++) {
+				var appendedTechnician = technicianList[i].DOMAINNAME + "\\" + technicianList[i].NAME;
+				g_form.addOption('admp_technician', JSON.stringify(technicianList[i]), appendedTechnician);
+			}
+			loadAssociatedRoles();
+		}
+	}
+}
+
+function submitNewAssociation() {
+	g_form.clearMessages();
+	g_form.hideAllFieldMsgs();
+	if(admpGlobal.isAuthEncrypted) {
+		createNewAssociation();
+		return;
+	}
+	var admpTechnician = g_form.getValue('admp_technician');
+	var serviceNowUser = g_form.getValue('servicenow_user');
+	var authToken = g_form.getValue('authToken');
+	var emptyFieldsStr = '';
+	if(admpTechnician.trim() == '') emptyFieldsStr += ' ADManager Plus Technician;';
+	if(serviceNowUser.trim() == '') emptyFieldsStr += ' ServiceNow User;';
+	if(authToken.trim() == '') emptyFieldsStr += ' Authtoken;';
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	} 
+	freezeWindow(true, 'Validating...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "validateAndSubmitAssociation");
+	technicianHandler.addParam("admpTechnician", admpTechnician);
+	technicianHandler.addParam("serviceNowUser", serviceNowUser);
+	technicianHandler.addParam("authToken", authToken);
+	technicianHandler.addParam("technicianSysId", '-1');
+	technicianHandler.addParam("associationSysId", '-1');
+	technicianHandler.getXMLAnswer(validateAndSubmitAssociation);
+	function validateAndSubmitAssociation(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			if(response.isFieldMsg == 'true') {
+				g_form.showFieldMsg(response.fieldName, response.responseBody, 'error');
+			} else {
+				g_form.addErrorMessage(response.responseBody);
+			}
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage(response.responseBody);
+			showAssociateUserForm(false);
+			showAssociatedUserList(true);
+			loadAssociatedUsers(); // Load new association data
+		}
+	}
+}
+
+function createNewAssociation() {
+	var serviceNowUser = g_form.getValue('servicenow_user');
+	var emptyFieldsStr = '';
+	if(serviceNowUser.trim() == '') emptyFieldsStr += ' ServiceNow User;';
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+	freezeWindow(true, 'Validating...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "validateAndSubmitAssociation");
+	technicianHandler.addParam("serviceNowUser", serviceNowUser);
+	technicianHandler.addParam("authToken", encryptAuthtoken(admpGlobal.authToken, serviceNowUser));
+	technicianHandler.addParam("admpTechnician",  JSON.stringify(admpGlobal.technician));
+	technicianHandler.addParam("isAuthEncrypted",  'true');
+	technicianHandler.addParam("technicianSysId", '-1');
+	technicianHandler.addParam("associationSysId", '-1');
+	technicianHandler.getXMLAnswer(validateAndSubmitAssociation);
+	function validateAndSubmitAssociation(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			if(response.isFieldMsg == 'true') {
+				g_form.showFieldMsg(response.fieldName, response.responseBody, 'error');
+			} else {
+				g_form.addErrorMessage(response.responseBody);
+			}
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage(response.responseBody);
+			showAssociateUserForm(false, true, true);
+			showAssociatedUserList(true);
+			loadAssociatedUsers(); // Load new association data
+		}
+	}
+}
+// --------------------------------------Add new associaion ends--------------------------------------------
+// --------------------------------------Validate authtoken starts ------------------------------------------
+function validateTechnicianAuthtoken() {
+	g_form.clearMessages();
+	g_form.hideAllFieldMsgs();
+	var serviceNowUser = g_form.getValue('servicenow_user');
+	var authToken = g_form.getValue('authToken');
+	var emptyFieldsStr = '';
+	if(serviceNowUser.trim() == '') emptyFieldsStr += ' ServiceNow User;';
+	if(authToken.trim() == '') emptyFieldsStr += ' Authtoken;';
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+	freezeWindow(true, 'Validating Authtoken...');
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAuthInfo");
+	configurationHandler.addParam("authToken", encryptAuthtokenWithPublicKey(authToken, admpGlobal.publicKey));
+	configurationHandler.addParam("buildNumber", admpGlobal.buildNumber);
+	configurationHandler.addParam("checkIfViewHDTAuthorized", "false");
+	configurationHandler.getXMLAnswer(validateAuthtoken);
+	function validateAuthtoken(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			showRecordProducerVariable(true, 'authToken', 'input');
+			enableRecordProducerVariable(false, 'authToken', 'input');
+			showUiMacro(true, 'technician_authtoken_edit');
+			showRecordProducerVariable(true, 'admp_technician_new', 'input');
+			enableRecordProducerVariable(false, 'admp_technician_new', 'input');
+			g_form.setDisplay('associated_roles_new', true);
+			$j("#validate_authtoken").hide();
+			if(admpGlobal.isEdit) $j("#submit_edit_association").show();
+			else $j("#submit_new_association").show();
+			
+			var maskedAuthtoken = authToken.substring(0, 4) + "****************************" + authToken.substring(32, 36);
+			g_form.setValue('authToken', maskedAuthtoken);
+			var admpTechnician = response.admpTechnician;
+			g_form.setValue('admp_technician_new', admpTechnician.DOMAINNAME + "\\" + admpTechnician.NAME);
+			loadAssociatedRoles(admpTechnician);
+			admpGlobal.authToken = authToken;
+			admpGlobal.technician = admpTechnician;
+		}
+	}
+}
+
+function editTechnicianAuthtoken() {
+	showUiMacro(false, 'technician_authtoken_edit');
+	enableRecordProducerVariable(true, 'authToken', 'input');
+	g_form.setValue('authToken', "");
+	$j("#validate_authtoken").show();
+	$j("#submit_new_association").hide();
+	$j("#submit_edit_association").hide();
+}
+// --------------------------------------Validate authtoken ends---------------------------------------------
+// --------------------------------------Edit associaion starts--------------------------------------------
+var associationSysId = null;
+var technicianSysId = null;
+
+function openEditAssociation(association_sys_id, technician_sys_id) {
+	associationSysId = association_sys_id; // store value for editing association
+	technicianSysId = technician_sys_id; // store value for editing association
+	g_form.clearMessages();
+	if(admpGlobal.buildNumber == -1 && admpGlobal.encryptedAuthToken == '') {
+		g_form.addErrorMessage("Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.");
+		return;
+	}
+	freezeWindow(true, 'Connecting ADManager Plus...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name","fetchAssociationRecord");
+	technicianHandler.addParam("association_sys_id", association_sys_id);
+	technicianHandler.addParam("buildNumber", admpGlobal.buildNumber);
+	technicianHandler.addParam("encryptedAuthToken", admpGlobal.encryptedAuthToken);
+	technicianHandler.getXMLAnswer(fetchAssociationRecord);
+	function fetchAssociationRecord(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == "true") {
+			var admpBuildNumber = response.allTechnicianDetails.admpBuildNumber;
+			if(admpBuildNumber < AUTH_ENCRYPTED_BUILD) {
+				showAssociatedUserList(false);
+				showAssociateUserForm(true, false);
+				var admpTechLoginId = response.fetchedAssociationRecord.login_id;
+				var selectedAdmpTechnician = response.fetchedAssociationRecord.admp_technician;
+				var selectedServiceNowUser = response.fetchedAssociationRecord.servicenow_user;
+				var selectedAuthToken = response.fetchedAssociationRecord.authtoken;
+				var technicianList = JSON.parse(response.allTechnicianDetails.responseBody);
+				g_form.clearOptions('admp_technician');
+				g_form.clearValue('servicenow_user');
+				g_form.clearValue('authToken');
+				var selectedAdmpTechnicianObject = getTechnicianFromList(technicianList, admpTechLoginId);
+				if(selectedAdmpTechnicianObject != null) {
+					g_form.addOption('admp_technician', JSON.stringify(selectedAdmpTechnicianObject), selectedAdmpTechnician);
+				}
+
+				for(var i = 0; i < technicianList.length; i++) {
+					var appendedTechnician = technicianList[i].DOMAINNAME + "\\" + technicianList[i].NAME;
+					if(appendedTechnician != selectedAdmpTechnician || selectedAdmpTechnicianObject == null) {
+						g_form.addOption('admp_technician', JSON.stringify(technicianList[i]), appendedTechnician);
+
+					}
+				}
+				loadAssociatedRoles();
+				g_form.setValue('servicenow_user', selectedServiceNowUser);
+// 				g_form.setValue('authToken', selectedAuthToken);
+				g_form.setValue('authToken', "");
+			} else if(admpBuildNumber >= AUTH_ENCRYPTED_BUILD) {
+				showAssociatedUserList(false);
+				showAssociateUserForm(true, false, true);
+				selectedServiceNowUser = response.fetchedAssociationRecord.servicenow_user;
+				selectedAuthToken = response.fetchedAssociationRecord.authtoken;
+				admpTechLoginId = response.fetchedAssociationRecord.login_id;
+				selectedAdmpTechnician = response.fetchedAssociationRecord.admp_technician;
+				technicianList = JSON.parse(response.allTechnicianDetails.responseBody);
+				g_form.clearValue('servicenow_user');
+				g_form.clearValue('authToken');
+				g_form.clearValue('admp_technician_new');
+				
+				g_form.setValue('servicenow_user', selectedServiceNowUser);
+// 				g_form.setValue('authToken', selectedAuthToken);
+				g_form.setValue('authToken', "");
+				g_form.setValue('admp_technician_new', selectedAdmpTechnician);
+				selectedAdmpTechnicianObject = getTechnicianFromList(technicianList, admpTechLoginId);
+				loadAssociatedRoles(selectedAdmpTechnicianObject);
+// 				admpGlobal.authToken = selectedAuthToken;
+				admpGlobal.technician = selectedAdmpTechnicianObject;
+				admpGlobal.isAuthEncrypted = true;
+				admpGlobal.isEdit = true;
+			}
+		}
+	}
+}
+
+function getTechnicianFromList(technicianList, admpTechLoginId) {
+	for(var i = 0; i < technicianList.length; i++) {
+		if(technicianList[i].LOGIN_ID == admpTechLoginId) {
+			return(technicianList[i]);
+		}
+	}
+	return null;
+}
+
+function submitEditAssociation() {
+	g_form.clearMessages();
+	g_form.hideAllFieldMsgs();
+	if(admpGlobal.isAuthEncrypted) {
+		editAssociation();
+		return;
+	}
+	var admpTechnician = g_form.getValue('admp_technician');
+	var serviceNowUser = g_form.getValue('servicenow_user');
+	var authToken = g_form.getValue('authToken');
+	var emptyFieldsStr = '';
+	if(admpTechnician.trim() == '') emptyFieldsStr += ' ADManager Plus Technician;';
+	if(serviceNowUser.trim() == '') emptyFieldsStr += ' ServiceNow User;';
+	if(authToken.trim() == '') emptyFieldsStr += ' Authtoken;';
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+	freezeWindow(true, 'Validating...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "validateAndSubmitAssociation");
+	technicianHandler.addParam("admpTechnician", admpTechnician);
+	technicianHandler.addParam("serviceNowUser", serviceNowUser);
+	technicianHandler.addParam("authToken", authToken);
+	technicianHandler.addParam("technicianSysId", technicianSysId);  //  get global varialble value
+	technicianHandler.addParam("associationSysId", associationSysId);  //  get global varialble value
+	technicianHandler.getXMLAnswer(validateAndSubmitAssociation);
+	function validateAndSubmitAssociation(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			if(response.isFieldMsg == 'true') {
+				g_form.showFieldMsg(response.fieldName, response.responseBody, 'error');
+			} else {
+				g_form.addErrorMessage(response.responseBody);
+			}
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage(response.responseBody);
+			showAssociatedUserList(true);
+			showAssociateUserForm(false);
+			loadAssociatedUsers(); // Load new association data
+		}
+	}
+}
+
+function editAssociation() {
+	var serviceNowUser = g_form.getValue('servicenow_user');
+	var emptyFieldsStr = '';
+	if(serviceNowUser.trim() == '') emptyFieldsStr += ' ServiceNow User;';
+	if(emptyFieldsStr != '') {
+		g_form.addErrorMessage("The following mandatory fields are not filled in:" + emptyFieldsStr);
+		return;
+	}
+	freezeWindow(true, 'Validating...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "validateAndSubmitAssociation");
+	technicianHandler.addParam("serviceNowUser", serviceNowUser);
+	technicianHandler.addParam("authToken", encryptAuthtoken(admpGlobal.authToken, serviceNowUser));
+	technicianHandler.addParam("admpTechnician",  JSON.stringify(admpGlobal.technician));
+	technicianHandler.addParam("isAuthEncrypted",  'true');
+	technicianHandler.addParam("technicianSysId", technicianSysId);  //  get global variable value
+	technicianHandler.addParam("associationSysId", associationSysId);  //  get global variable value
+	technicianHandler.getXMLAnswer(validateAndSubmitAssociation);
+	function validateAndSubmitAssociation(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			if(response.isFieldMsg == 'true') {
+				g_form.showFieldMsg(response.fieldName, response.responseBody, 'error');
+			} else {
+				g_form.addErrorMessage(response.responseBody);
+			}
+		} else if(response.status == 'true') {
+			g_form.addInfoMessage(response.responseBody);
+			showAssociatedUserList(true);
+			showAssociateUserForm(false);
+			loadAssociatedUsers(); // Load new association data
+		}
+	}
+}
+// --------------------------------------Edit associaion ends--------------------------------------------
+// --------------------------------------Delete association starts--------------------------------------------
+function openDeleteDisassociation(servicenow_sys_id, technician_sys_id) {
+	g_form.clearMessages();
+	var title = 'Disassociate Mapping';
+	var message = 'This mapping will be deleted. Are you sure you want to continue?';
+	showConfirmModal(title, message, function() {
+		deleteAssociation(servicenow_sys_id, technician_sys_id);
+	});
+}
+function deleteAssociation(servicenow_sys_id, technician_sys_id) {
+	freezeWindow(true, 'Disassociating...');
+	var technicianHandler = new GlideAjax("ADManagerAssociateUserHandler");
+	technicianHandler.addParam("sysparm_name", "deleteAssociation");
+	technicianHandler.addParam("servicenow_sys_id", servicenow_sys_id);
+	technicianHandler.addParam("technician_sys_id", technician_sys_id);
+	technicianHandler.getXMLAnswer(associationDelete);
+	function associationDelete(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			g_form.addInfoMessage(response.responseBody);
+			loadAssociatedUsers();
+		}
+	}
+}
+// --------------------------------------Delete association ends--------------------------------------------
+// ----------------------Common utils for Associate User Record Producer starts--------------------------------
+
+function showAssociatedUserList(show) {
+	if(show) {
+		$j("#associate_user_list").show();
+		setPageTitle("Associate User");
+	} else {
+		$j("#associate_user_list").hide();
+	}
+}
+
+function showAssociateUserForm(isShow, isNewRecord, isNewVersion) {
+	var backButton = g_form.getElement('back_button_in_header');
+	if(isShow == false) {
+		backButton.style.display = 'none';
+		showRecordProducerVariable(false, 'admp_technician', 'select');
+		g_form.setDisplay('associated_roles', false);
+		showRecordProducerVariable(false, 'servicenow_user', 'input');
+		showRecordProducerVariable(false, 'authToken', 'input');
+		showRecordProducerVariable(false, 'admp_technician_new', 'input');
+		g_form.setDisplay('associated_roles_new', false);
+		showUiMacro(false, 'technician_authtoken_edit');
+		$j("#submit_new_association").hide();
+		$j("#submit_edit_association").hide();
+		$j("#validate_authtoken").hide();
+		associationSysId = null;
+		technicianSysId = null;
+		admpGlobal.authToken = '';
+		admpGlobal.technician = {};
+		admpGlobal.isAuthEncrypted = false;
+		admpGlobal.isEdit = false;
+		return;
+	}
+	if(isNewVersion && isShow) {
+		backButton.style.display = 'block';
+		backButton.setAttribute('onclick', 'backToAssociateUserList()');
+		showRecordProducerVariable(false, 'admp_technician', 'select');
+		g_form.setDisplay('associated_roles', false);
+		showRecordProducerVariable(true, 'servicenow_user', 'input');
+		enableRecordProducerVariable(true, 'servicenow_user', 'input');
+		showRecordProducerVariable(true, 'authToken', 'input');
+		enableRecordProducerVariable(true, 'authToken', 'input');
+		showRecordProducerVariable(false, 'admp_technician_new', 'input');
+		g_form.setDisplay('associated_roles_new', false);
+		showUiMacro(false, 'technician_authtoken_edit');
+		if(isNewRecord == true) {
+			setPageTitle("New Association");
+			$j("#validate_authtoken").show();
+		} else if(isNewRecord == false) {
+			setPageTitle("Edit Association");
+			showRecordProducerVariable(true, 'authToken', 'input');
+			enableRecordProducerVariable(true, 'authToken', 'input');
+			showRecordProducerVariable(true, 'admp_technician_new', 'input');
+			enableRecordProducerVariable(false, 'admp_technician_new', 'input');
+			g_form.setDisplay('associated_roles_new', true);	
+			$j("#validate_authtoken").show();
+		}
+		return;
+	}
+	if(isShow == true) {
+		backButton.style.display = 'block';
+		backButton.setAttribute('onclick', 'backToAssociateUserList()');
+		showRecordProducerVariable(true, 'admp_technician', 'select');
+		enableRecordProducerVariable(true, 'admp_technician', 'select');
+		g_form.setDisplay('associated_roles', true);
+		showRecordProducerVariable(true, 'servicenow_user', 'input');
+		enableRecordProducerVariable(true, 'servicenow_user', 'input');
+		showRecordProducerVariable(true, 'authToken', 'input');
+		enableRecordProducerVariable(true, 'authToken', 'input');
+		showRecordProducerVariable(false, 'admp_technician_new', 'input');
+		g_form.setDisplay('associated_roles_new', false);
+		showUiMacro(false, 'technician_authtoken_edit');
+		if(isNewRecord == true) {
+			$j("#submit_new_association").show();
+			setPageTitle("New Association");
+		} else if(isNewRecord == false) {
+			$j("#submit_edit_association").show();
+			setPageTitle("Edit Association");
+		}
+	}
+}
+
+function backToAssociateUserList() {
+	g_form.clearMessages();
+	g_form.hideAllFieldMsgs();
+	showAssociateUserForm(false);
+	showAssociatedUserList(true);
+}
+
+function hideRecordProducerDefaultBtns() {
+	g_form.clearMessages();
+	g_form.disableAttachments();
+	g_form.getElement('back_button_in_header').style.display = 'none'; //back button
+	g_form.getElement('sc_attachment_button').style.display = 'none'; //attachment button
+	$j(".btn.btn-icon.icon-ellipsis").hide(); //more options button
+	g_form.getElement('submit_button').style.display = 'none'; //submit button
+// 	$j(".pointerhand.icon-stop-watch.btn.btn-icon").hide(); //response time button
+}
+
+function showConfirmModal(title, message, yesCallBack, noCallBack) {
+	$j("#admp_confirm_modal_title").text(title);
+	$j("#admp_confirm_modal_message").text(message);
+	$j("#admp_confirm_modal_yes").off('click');
+	$j("#admp_confirm_modal_yes").on('click', yesCallBack);
+	
+}
+
+function showRecordProducerVariable(isShow, name, type) {
+	if(type == 'input') {
+		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearValue(name);
+	} else if(type == 'select') {
+		g_form.setMandatory(name, isShow);
+		g_form.setDisplay(name, isShow);
+		g_form.clearOptions(name);
+	}  
+}
+
+function enableRecordProducerVariable(isEnable, name, type) {
+	g_form.setMandatory(name, isEnable);
+	g_form.setReadOnly(name, !isEnable);
+	g_form.getElement(name).style.backgroundColor = (!isEnable)? '#f4f4f4': '#fff';
+	g_form.getElement(name).style.border = (!isEnable)? '1px solid #ddd' :'1px solid #bec1c6';
+}
+
+function showUiMacro(isShow, uiMacroName, elementClass) {
+	// variable name in record producer and element class in UI Macro are set the same
+	if(elementClass == null) elementClass = uiMacroName;
+	// var ele = document.getElementById(g_form.getControl(uiMacroName).id).querySelector('.' + elementClass);
+	var macro = g_form.getElement(uiMacroName);
+	if (!macro)  {
+		var id = getMacroVsId().get(uiMacroName);
+		macro = document.getElementById(id);
+	}
+	var ele = macro.querySelector('.' + elementClass);
+	g_form.setDisplay(uiMacroName, isShow);
+	ele.style.display = isShow ? 'block' : 'none'; 
+	ele.parentElement.style.overflow = 'visible';
+	ele.parentElement.style.minHeight = '0px';
+	// ele.parentElement.previousSibling.innerHTML = '';
+}
+
+function getMacroVsId() {
+	var macroVsId = new Map();
+	macroVsId.set("associated_roles", "macro_IO:0cafe120db8e70105ce09db2ca961981");
+	macroVsId.set("technician_authtoken_edit", "macro_IO:acda04e42fd59110f0492aa62799b6c7");
+	macroVsId.set("associated_roles_new", "macro_IO:e81e86372fc11110f0492aa62799b67b");
+	return macroVsId;
+}
+
+function setPageTitle(title) {
+	var titleElement = $j("tr.header.sc_header td.sc_header_main_cell span[role='heading']"); 
+	titleElement.css('white-space','pre');
+	titleElement.text(title);
+}
+
+function domManipulation() {
+	var ele = $j(".technician_authtoken_edit").parents("div[id='macro_IO:acda04e42fd59110f0492aa62799b6c7']");
+	ele.css('margin-top', '0px');
+	ele.children("div[id*='label_IO:']").empty();
+	ele.parents("tr[id='container_acda04e42fd59110f0492aa62799b6c7']").html(ele);
+}
+
+function encryptAuthtokenWithPublicKey(authToken, publicKey) {
+	var jsEncryptObj = new JSEncrypt();
+	jsEncryptObj.setPublicKey(publicKey);
+	var encryptedAuthToken = jsEncryptObj.encrypt(authToken);
+	return encryptedAuthToken;
+}
+
+function encryptAuthtoken(authToken, key) {
+    var encryptedMessage = CryptoJS.AES.encrypt(authToken, key);
+    return encryptedMessage.toString();
+}
+
+function decryptAuthtoken(encryptedAuthToken, key) {
+	var decryptedMessage = CryptoJS.AES.decrypt(encryptedAuthToken, key);
+	return decryptedMessage.toString(CryptoJS.enc.Utf8);
+}
+
+function checkIfValidUUID(str, encryptAllAuthTokens) {
+	// Regular expression to check if string is a valid UUID
+	var regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+	var isValidUUID = regexExp.test(str);
+	if(isValidUUID && encryptAllAuthTokens) {
+		getAndEncryptAllAuthTokens();
+	}
+	return isValidUUID;
+}
+
+function getAndEncryptAllAuthTokens() {
+	var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+	configurationHandler.addParam("sysparm_name","getAllAuthTokens");
+	configurationHandler.getXMLAnswer(getAllAuthTokens);
+	function getAllAuthTokens(response) {
+		response = JSON.parse(response);
+		var configurationObject = response.configurationObject;
+		for(var i = 0; i < configurationObject.length; i++) {
+			configurationObject[i].encryptedAuthToken = encryptAuthtoken(configurationObject[i].authtoken, configurationObject[i].key);
+		}
+		var associationObject = response.associationObject;
+		for(var j = 0; j < associationObject.length; j++) {
+			associationObject[j].encryptedAuthToken = encryptAuthtoken(associationObject[j].authtoken, associationObject[j].key);
+		}
+		var configurationHandler = new GlideAjax("ADManagerConfigurationHandler");
+		configurationHandler.addParam("sysparm_name","encryptAllAuthTokens");
+		configurationHandler.addParam("response",  JSON.stringify(response));
+		configurationHandler.getXMLAnswer(encryptAllAuthTokens);
+		function encryptAllAuthTokens(response) {
+		}
+	}
+}
+
+// ----------------------Common utils for Associate User Record Producer ends--------------------------------]]></script>
+        <script_name>ADManagerAssociateUser</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-12 09:47:17</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>15a7fee7db35f0105ce09db2ca96192d</sys_id>
+        <sys_mod_count>314</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerAssociateUser</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_15a7fee7db35f0105ce09db2ca96192d</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-21 11:50:03</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

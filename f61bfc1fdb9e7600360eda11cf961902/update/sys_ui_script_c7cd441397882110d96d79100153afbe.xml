@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description>ADManager Plus Create User Form Customization Scripts</description>
+        <global>false</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>x_manen_admanager.ADManagerCreateUser</name>
+        <script><![CDATA[// ----------------------------------------------------------------------------Create User onLoad module/catalog/menu starts----------------------------------------------------------------------
+function fcGetAuthInfoCallback(response) {
+	freezeWindow(false);
+	g_form.setDisplay('createuserform', true); // show create user form
+	response = JSON.parse(response);
+	if(response.status == "false") {
+		g_form.addErrorMessage(response.responseBody);
+		disableSelectFields();
+	} else {
+		setFormData(response.requestDetails);
+		var admpLocation = getLocation();
+		var domainList = response.domainNameList;
+		if(admpLocation == "module" || admpLocation == "menu") domainList = response.authorizedDomainList;
+		$j("#select_domainName").empty();
+		var defaultDomain = '';
+		for(var i = 0; i < domainList.length; i++) {
+			$j('#select_domainName').append(new Option(domainList[i].DOMAIN_NAME, domainList[i].DOMAIN_NAME));
+			if(defaultDomain == '') defaultDomain = (domainList[i].IS_DEFAULT_DOMAIN == 'true')? domainList[i].DOMAIN_NAME: '';
+		}
+		if(defaultDomain != '') $j('#select_domainName').val(defaultDomain);
+		fcGetTemplateList(true);
+	}
+}
+
+function disableSelectFields() {
+	$j("#select_domainName").prop("disabled", true);
+	$j("#select_templateName").prop("disabled", true);
+}
+
+function fcGetTemplateList(isFirstLoad) {
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax("ADManagerCommonUtil");
+	ga.addParam("sysparm_name", "getTemplateList");
+	ga.addParam("domainName", fcGetDomainName(isFirstLoad));
+	ga.addParam("buildNumber", getBuildNumber());
+	ga.addParam("encryptedAuthToken", getEncryptedAuthToken());
+	var admpLocation = getLocation();
+	if(admpLocation == "catalog") ga.addParam("is_requester", "true");
+	ga.getXMLAnswer(fcGetTemplateListCallback);	
+	function fcGetTemplateListCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == "false") {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			var templateList = JSON.parse(response.responseBody).TemplateList;
+			$j("#select_templateName").empty();
+			var defaultTemplate = '';
+			for(var i = 0; i < templateList.length; i++) {
+				$j('#select_templateName').append(new Option(templateList[i].TEMPLATE_DISPLAY_NAME, templateList[i].TEMPLATE_NAME));
+				if(defaultTemplate == '') defaultTemplate = (templateList[i].hasOwnProperty("IS_DEFAULT") && templateList[i].IS_DEFAULT)? templateList[i].TEMPLATE_NAME: '';
+			}
+			if(defaultTemplate != '') $j('#select_templateName').val(defaultTemplate);
+		}
+		if(isFirstLoad) {
+			fcOnDomainChangeEventListener();
+			fcGetFieldsList();
+		}
+	}
+}
+
+function fcOnDomainChangeEventListener() {
+	var previousDomainNameVal = '';
+	$j('#select_domainName')
+		.focus(function() {
+		previousDomainNameVal = this.value; 
+	}).change(function() {
+		g_form.clearMessages();
+		var title = 'Alert';
+		var message = 'Changing the domain will also change the settings of domain-specific fields. Do you wish to continue?';
+		showConfirmModal(title, message, function(){fcGetTemplateList();}, function(){$j('#select_domainName').val(previousDomainNameVal);});
+	});
+}
+
+function fcGetFieldsList() {
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax("ADManagerCreateUserFormCustomization");
+	ga.addParam("sysparm_name", "getFieldsList");
+	ga.addParam("buildNumber", getBuildNumber());
+	ga.addParam("encryptedAuthToken", getEncryptedAuthToken());
+	ga.addParam("getAllFields","true");
+	ga.getXMLAnswer(getFieldsListCallback);
+	function getFieldsListCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else {
+			var fieldsList = response.fieldsList;
+			fieldsList = fcGetFieldsListForMenu(fieldsList); //fields list should show fields selected during creation of incident in service catalog
+			setFieldsList(fieldsList);
+			var html = '';
+			for(var i=0;i<fieldsList.length;i++) {
+				var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+				if(!isSelected) continue;
+				var isMandatory = (fieldsList[i].isMandatory=="true")?true:false;
+				var maxLength = parseInt(fieldsList[i].maxLength);
+				var displayName = fieldsList[i].displayName;
+				var fieldType = fieldsList[i].fieldType;
+				var ldapName = fieldsList[i].ldapName;
+				var id = fieldType + '_' + ldapName;
+				if(!isMandatory) html += '<div class="form-group">';
+				else html += '<div class="form-group is-required">';
+				if(!isMandatory) html += '<label class="control-label int-make-block int-mb-8">'+displayName+'</label>';
+				else html += '<label class="control-label int-make-block int-mb-8">'+displayName+'<span class="required-marker"></span></label>';
+				html += '<div class="int-input-group int-w-560">';
+				if(fieldType == "text") html += '<input type="text" class="form-control" autocomplete="off" id="'+id+'"/>';
+				if(fieldType == "password") html += '<input type="password" class="form-control" autocomplete="off" id="'+id+'"/>';
+				html += '</div>';
+				html += '</div>';
+			}
+			html += '<div class="form-group int-mt-35"><button class="btn btn-primary" onclick="fcCreateUserSubmit();">Submit</button></div>';
+			$j("#div_templateName").after(html);
+			fcPopulateForm();
+		}
+	}
+}
+// ----------------------------------------------------------------------------Create User onLoad module/catalog/menu ends----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------Create User onLoad menu starts----------------------------------------------------------------------------
+function fcGetDomainName(isFirstLoad) {
+	var formData = getFormData();
+	if(isFirstLoad && fcIsCreateUserFormData() && formData.hasOwnProperty("domainName")) {
+		return formData.domainName;
+	} else {
+		return $j('#select_domainName').val();
+	}
+}
+
+function fcPopulateForm() {
+	var formData = getFormData();
+	if(!fcIsCreateUserFormData()) return;
+	var fieldsList = [{"displayName":"Select Domain","fieldType":"select","isMandatory":"true","ldapName":"domainName","maxLength":"250","isSelected":"true"},{"displayName":"Select Template","fieldType":"select","isMandatory":"true","ldapName":"templateName","maxLength":"250","isSelected":"true"}];
+	fieldsList = fieldsList.concat(getFieldsList());
+	for(var i=0;i<fieldsList.length;i++) {
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		if(fieldType != 'password') {
+			if(formData[ldapName]) $j("#"+id).val(formData[ldapName]);
+		} else if(fieldType == 'password' && formData.hasOwnProperty("secureData")) {
+			var secureData = JSON.parse(formData.secureData);
+			if(secureData[ldapName]) $j("#"+id).val(secureData[ldapName]);
+		}
+	}
+}
+
+function fcIsCreateUserFormData() {
+	var admpLocation = getLocation();
+	var formData = getFormData();
+	if(admpLocation == 'menu' && formData && formData.hasOwnProperty("action") && (formData.action == "Create User")) return true;
+	return false;
+}
+
+function fcGetFieldsListForMenu(fieldsList) {
+	if(!fcIsCreateUserFormData()) return fieldsList;
+	var formData = getFormData();
+	for(var i=0;i<fieldsList.length;i++) {
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		if(fieldType != 'password') {
+			fieldsList[i].isSelected = (formData.hasOwnProperty(ldapName))? "true": "false";
+		} else if(fieldType == 'password' && formData.hasOwnProperty("secureData")) {
+			var secureData = JSON.parse(formData.secureData);
+			fieldsList[i].isSelected = (secureData.hasOwnProperty(ldapName))? "true": "false";
+		}
+	}
+	return fieldsList;
+}
+// ----------------------------------------------------------------------------Create User onLoad menu ends----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------Create User onSubmit common starts-----------------------------------------------------------------
+function fcCreateUserSubmit() {
+	g_form.clearMessages();
+	scrollToTop();
+	if(!fcIsMandatoryFieldsFilled()) {
+		return false;
+	}
+	if(!fcIsMaxLengthReached()) {
+		return false;
+	}
+
+	var admpLocation = getLocation();
+	if(admpLocation == "module" || admpLocation == "menu") {
+		fcCreateSingleUser();
+	} 
+	else if(admpLocation == "catalog") {
+		fcCreateIncident();
+	}
+}
+
+function fcIsMandatoryFieldsFilled() {
+	var fieldsList = [{"displayName":"Select Domain","fieldType":"select","isMandatory":"true","ldapName":"domainName","maxLength":"250","isSelected":"true"},{"displayName":"Select Template","fieldType":"select","isMandatory":"true","ldapName":"templateName","maxLength":"250","isSelected":"true"}];
+	fieldsList = fieldsList.concat(getFieldsList());
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var isMandatory = (fieldsList[i].isMandatory=="true")?true:false;
+		if(!isMandatory) continue;
+		var maxLength = parseInt(fieldsList[i].maxLength);
+		var displayName = fieldsList[i].displayName;
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		var fieldVal = $j("#"+id).val();
+		if(fieldType != "password" && fieldVal) fieldVal = $j("#"+id).val().trim();
+		if(!fieldVal || fieldVal === '') {
+			g_form.addErrorMessage("\""+displayName+"\" is a mandatory field. You can't leave it empty.");
+			return false;
+		}
+	}
+	return true;
+}
+
+function fcIsMaxLengthReached() {
+	var fieldsList = getFieldsList();
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var isMandatory = (fieldsList[i].isMandatory=="true")?true:false;
+		var maxLength = parseInt(fieldsList[i].maxLength);
+		var displayName = fieldsList[i].displayName;
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		var fieldVal = $j("#"+id).val();
+		if(fieldType != "password" && fieldVal) fieldVal = $j("#"+id).val().trim();
+		if(fieldVal.length > maxLength) {
+			g_form.addErrorMessage("\""+displayName+"\" should not contain more than "+maxLength+" characters.");
+			return false;
+		}
+	}
+	return true;
+}
+
+function fcClearFormFields() {
+	fieldsList = getFieldsList();
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		$j("#"+id).val("");
+	}
+}
+// ----------------------------------------------------------------------------Create User onSubmit common ends----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------Create User onSubmit module/menu starts---------------------------------------------------------------------
+function fcCreateSingleUser() {
+	var domainName =  $j('#select_domainName').val();
+	var inputFormat = fcGetInputFormat();
+	var buildNumber = getBuildNumber();
+	var encryptedAuthToken = getEncryptedAuthToken();
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax('ADManagerAPIUtil');
+	ga.addParam("sysparm_name", "createSingleUser");
+	ga.addParam("domainName", domainName);
+	ga.addParam("userDetails", inputFormat);
+	ga.addParam("buildNumber", buildNumber);
+	ga.addParam("encryptedAuthToken", encryptedAuthToken);
+	ga.getXMLAnswer(fcCreateSingleUserCallback);
+	function fcCreateSingleUserCallback(response) {
+		freezeWindow(false);
+		response = JSON.parse(response);
+		scrollToTop();
+		if(response.status == 'false') {
+			g_form.addErrorMessage(response.responseBody);
+		} else if(response.status == 'true') {
+			var comments = '';
+			var result = JSON.parse(response.responseBody);
+			var statusMessage = (result[0].statusMessage).replace(/&amp;/g, "&");
+			if(result[0].status == "SEVERE") {
+				g_form.addErrorMessage(statusMessage);
+				comments += statusMessage;
+			} else if(result[0].status == "SUCCESS" || result[0].status == "WARNING") {
+				g_form.addInfoMessage(statusMessage);
+				comments += statusMessage;
+				if(result[0]["SAM Account Name"]) {
+					g_form.addInfoMessage("LOGON NAME : " + result[0]["SAM Account Name"]);
+					comments += "\nLogon Name : " + result[0]["SAM Account Name"];	
+				}
+				fcClearFormFields();
+			} else {
+				g_form.addInfoMessage(statusMessage);
+				comments += statusMessage;
+				fcClearFormFields();
+			}
+			var gURL = new GlideURL();
+			gURL.setFromCurrent();
+			var sys_id = gURL.getParam('sys_id');
+			if(sys_id != null && sys_id != '' && comments != '') {
+				fcUpdateComments(sys_id, comments);
+			}
+		} 
+	}
+}
+
+function fcGetInputFormat() {
+	var userList = [];
+	var userDetails = {};
+	var fieldsList = [{"displayName":"Select Template","fieldType":"select","isMandatory":"true","ldapName":"templateName","maxLength":"250","isSelected":"true"}];
+	fieldsList = fieldsList.concat(getFieldsList());
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		var fieldVal = $j("#"+id).val();
+		if(fieldType != "password" && fieldVal) fieldVal = $j("#"+id).val().trim();
+		if(!fieldVal || fieldVal === '') {
+			continue;
+		}
+		userDetails[ldapName] = fieldVal;
+	}
+	userList.push(userDetails);
+	return JSON.stringify(userList);	
+}
+
+function fcUpdateComments(sys_id, comments) {
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax("ADManagerIncidentHandler");
+	ga.addParam("sysparm_name", "addComments");
+	ga.addParam("sys_id", sys_id);
+	ga.addParam("comments", comments);
+	ga.getXMLAnswer(fcUpdateCommentsCallback);
+	function fcUpdateCommentsCallback(response) {
+		freezeWindow(false);
+	}
+}
+// ----------------------------------------------------------------------------Create User onSubmit module/menu ends------------------------------------------------------------------------
+// ----------------------------------------------------------------------------Create User onSubmit catalog starts--------------------------------------------------------------------------
+function fcCreateIncident() {
+	var requestDetails = fcConstructRequestDetails();
+	var secureData = fcConstructSecureData();
+	var comments = fcConstructComments(requestDetails, secureData);
+
+	freezeWindow(true, 'Loading, please wait...');
+	var ga = new GlideAjax('ADManagerIncidentHandler');
+	ga.addParam("sysparm_name", "createIncident");
+	ga.addParam("description", "Create a user in AD with the following details.");
+	ga.addParam("comments", comments);
+	ga.addParam("requestDetails", requestDetails);
+	ga.addParam("secureData", secureData);
+	ga.getXMLAnswer(fcCreateIncidentCallback);
+	function fcCreateIncidentCallback(response) {
+		freezeWindow(false);
+		scrollToTop();
+		g_form.addInfoMessage('Your request has been successfully submitted to the IT team.');
+		fcClearFormFields();
+	}
+}
+
+function fcConstructRequestDetails() {
+	var requestDetails = {};
+	var fieldsList = [{"displayName":"Select Domain","fieldType":"select","isMandatory":"true","ldapName":"domainName","maxLength":"250","isSelected":"true"},{"displayName":"Select Template","fieldType":"select","isMandatory":"true","ldapName":"templateName","maxLength":"250","isSelected":"true"}];
+	fieldsList = fieldsList.concat(getFieldsList());
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var fieldType = fieldsList[i].fieldType;
+		if(fieldType === 'password') {
+			continue;
+		}
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		var fieldVal = $j("#"+id).val().trim();
+		requestDetails[ldapName] = fieldVal;
+	}
+	requestDetails["action"] = "Create User"; //action name added for incidents data fetching purpose
+	return JSON.stringify(requestDetails);
+}
+
+function fcConstructSecureData() {
+	var secureData = {};
+	var fieldsList = getFieldsList();
+	for(var i=0;i<fieldsList.length;i++) {
+		var isSelected = (fieldsList[i].isSelected=="true")?true:false;
+		if(!isSelected) continue;
+		var fieldType = fieldsList[i].fieldType;
+		var ldapName = fieldsList[i].ldapName;
+		var id = fieldType + '_' + ldapName;
+		var fieldVal = $j("#"+id).val();
+		if(fieldType === 'password') {
+			secureData[ldapName] = fieldVal;
+		}
+	}
+	return JSON.stringify(secureData);
+}
+
+function fcConstructComments(requestDetails, secureData) {
+	requestDetails = JSON.parse(requestDetails);
+	secureData = JSON.parse(secureData);
+	var fields = Object.assign({}, requestDetails, secureData);
+	var comments = '[code]<ul class="sn-widget-list sn-widget-list-table">';
+	for(var ldapName in fields) {
+		var formField = fcGetFormField(ldapName);
+		if(!formField) continue; //check added for adding Action key in request details
+		var fieldType = formField.fieldType;
+		var fieldDisplayName = formField.displayName;
+		var fieldVal = fields[ldapName];
+		if(fieldVal != '') {
+			if(ldapName === "templateName") fieldVal = $j("#select_templateName option:selected").text();
+			if(fieldType === "password") fieldVal = "******";
+			comments += '<li class="ng-scope"><span class="sn-widget-list-table-cell">'+fieldDisplayName+': </span><span class="sn-widget-list-table-cell"><span class="ng-scope">'+fieldVal+'</span></span></li>';
+		}
+	}
+	comments += '</ul>[/code]';
+	return comments;
+}
+
+function fcGetFormField(ldapName) {
+	var fieldsList = [{"displayName":"Select Domain","fieldType":"select","isMandatory":"true","ldapName":"domainName","maxLength":"250","isSelected":"true"},{"displayName":"Select Template","fieldType":"select","isMandatory":"true","ldapName":"templateName","maxLength":"250","isSelected":"true"}];
+	fieldsList = fieldsList.concat(getFieldsList());
+	for(var i=0;i<fieldsList.length;i++) {
+		if(ldapName == fieldsList[i].ldapName) {
+			return fieldsList[i];
+		}
+	}
+	return null;
+}
+// ----------------------------------------------------------------------------Create User onSubmit catalog ends-------------------------------------------------------------------------------]]></script>
+        <script_name>ADManagerCreateUser</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-01-02 15:27:08</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>c7cd441397882110d96d79100153afbe</sys_id>
+        <sys_mod_count>112</sys_mod_count>
+        <sys_name>x_manen_admanager.ADManagerCreateUser</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_script_c7cd441397882110d96d79100153afbe</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-22 10:20:35</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>

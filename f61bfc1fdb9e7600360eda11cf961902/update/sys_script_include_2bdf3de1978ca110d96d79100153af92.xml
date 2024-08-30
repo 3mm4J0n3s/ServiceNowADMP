@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerCreateUserFormCustomization</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>ADManager Plus Create User Form Customization</description>
+        <name>ADManagerCreateUserFormCustomization</name>
+        <script><![CDATA[var ADManagerCreateUserFormCustomization = Class.create();
+ADManagerCreateUserFormCustomization.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	getFieldsList: function() {
+		var responseJSON = {};
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		var getAllFields = this.getParameter('getAllFields');
+		try {
+			var isTableEmpty = this.isTableEmpty();
+			if(!isTableEmpty) {
+				responseJSON.fieldsList = this.fetchUserCreationFormFields(getAllFields);
+				responseJSON.status = 'true';
+			} else {
+				var response = this.admpGetUserCreationFormFields(buildNumber, encryptedAuthToken);
+				if(response.status == "false") {
+					return new global.JSON().encode(response);
+				} else if(response.status == "true") {
+					this.deleteAllEntries();
+					var fieldsList = JSON.parse(response.responseBody).FieldsList;
+					for(var i=0;i<fieldsList.length;i++) {
+						gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+						gr.initialize();
+						var ldapName = (fieldsList[i].ldapName).toString();
+						gr.ldap_name = ldapName;
+						gr.display_name = (fieldsList[i].displayName).toString();
+						gr.field_type = (fieldsList[i].fieldType).toString();
+						gr.max_length = fieldsList[i].maxLength;
+						gr.order = this.getIsSelectedOrder(ldapName).order;
+						gr.is_selected = this.getIsSelectedOrder(ldapName).isSelected;
+						//gr.is_mandatory = fieldsList[i].isMandatory;
+						gr.is_mandatory = false;
+						gr.insert();
+					}
+					responseJSON.fieldsList = this.fetchUserCreationFormFields(getAllFields);
+					responseJSON.status = 'true';
+				}
+			}
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	isTableEmpty: function() {
+		var gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+		gr.query();
+		if(gr.next()) {
+			return false; //Table is not empty
+		} else {
+			return true; //Table is empty
+		}
+	},
+
+	deleteAllEntries: function() {
+		var gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+		gr.deleteMultiple(); //delete existing entries
+	},
+
+	fetchUserCreationFormFields: function(getAllFields) {
+		var fieldsList = [];
+		var gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+		if(!getAllFields) gr.addQuery('is_selected', true);
+		gr.orderBy('order');
+		gr.query();
+		while (gr.next()) {
+			var field = {};
+			field.sysId = gr.sys_id.toString();
+			field.ldapName = gr.ldap_name.toString();
+			field.displayName = gr.display_name.toString();
+			field.fieldType = gr.field_type.toString();
+			field.order = gr.order.toString();
+			field.maxLength = gr.max_length.toString();
+			field.isSelected = gr.is_selected.toString();
+			field.isMandatory = gr.is_mandatory.toString();
+			fieldsList.push(field);
+		}
+		return fieldsList;
+	},
+
+	submitUserCreationFormFields: function() {
+		var responseJSON = {};
+		try {
+			var action = this.getParameter('action');
+			var fieldsList = this.getParameter('fieldsList');
+			responseJSON.actionsObj = JSON.parse(new ADManagerConfigurationHandler().modifyActionsTable(action)).actionsObj;
+			if(fieldsList) responseJSON.fieldsList = this.modifyUserCreationFormFields(fieldsList);
+			responseJSON.status = 'true';
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	modifyUserCreationFormFields: function(fieldsList) {
+		fieldsList = JSON.parse(fieldsList);
+		for(var i=0;i<fieldsList.length;i++) {
+			gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+			gr.addQuery('sys_id', fieldsList[i].sysId);
+			gr.query();
+			if (gr.next()) {
+				// 	gr.ldap_name = (fieldsList[i].ldapName).toString();
+				//  gr.display_name = (fieldsList[i].displayName).toString();
+				//  gr.field_type = (fieldsList[i].fieldType).toString();
+				//  gr.max_length = fieldsList[i].maxLength;
+				gr.order = fieldsList[i].order;
+				gr.is_mandatory = fieldsList[i].isMandatory;
+				gr.is_selected = fieldsList[i].isSelected;
+				gr.update();
+			}
+		}
+		return this.fetchUserCreationFormFields(true);
+	},
+
+	refreshUserCreationFormFields: function() {
+		var responseJSON = {};
+		var buildNumber = this.getParameter('buildNumber');
+		var encryptedAuthToken = this.getParameter('encryptedAuthToken');
+		try {
+			var response = this.admpGetUserCreationFormFields(buildNumber, encryptedAuthToken);
+			if(response.status == "false") {
+				return new global.JSON().encode(response);
+			} else if(response.status == "true") {
+				var newFieldsList = JSON.parse(response.responseBody).FieldsList;
+				var existingFieldsList =  this.fetchUserCreationFormFields(true);
+
+				this.deleteAllEntries();
+				for(var i=0;i<newFieldsList.length;i++) {
+					gr = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+					var ldapName = (newFieldsList[i].ldapName).toString();
+					var existingFormField = this.getExistingFormField(existingFieldsList, ldapName);
+					if(existingFormField) {
+						gr.initialize();
+						gr.ldap_name = (newFieldsList[i].ldapName).toString();
+						gr.display_name = (newFieldsList[i].displayName).toString();
+						gr.field_type = (newFieldsList[i].fieldType).toString();
+						gr.max_length = newFieldsList[i].maxLength;
+						gr.is_mandatory = existingFormField.isMandatory;
+						gr.is_selected = existingFormField.isSelected;
+						gr.order = existingFormField.order;
+						gr.insert();
+					} else {
+						gr.initialize();
+						gr.ldap_name = (newFieldsList[i].ldapName).toString();
+						gr.display_name = (newFieldsList[i].displayName).toString();
+						gr.field_type = (newFieldsList[i].fieldType).toString();
+						gr.max_length = newFieldsList[i].maxLength;
+						//gr.is_mandatory = newFieldsList[i].isMandatory;
+						gr.is_mandatory = false;
+						gr.is_selected = false;
+						gr.order = 1000;
+						gr.insert();
+					}
+				}
+				responseJSON.status = 'true';
+			}
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	getExistingFormField: function(existingFieldsList, ldapName) {
+		for(var i=0;i<existingFieldsList.length;i++) {
+			if(existingFieldsList[i].ldapName == ldapName) {
+				return existingFieldsList[i];
+			}
+		}
+		return null;
+	},
+
+	admpGetUserCreationFormFields: function(buildNumber, encryptedAuthToken) {
+		// Create User Form Customization Build, works only from 7180
+		var responseJSON = {};
+		var sm, requestBody, responseCode, responseBody;
+		var admpServerUrl = new ADManagerConfigurationHandler().getAdmpServerUrl();
+		try {
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetUserCreationFormFields', 'GET');
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setQueryParameter("PRODUCT_NAME", "ServiceNow");
+			sm.setQueryParameter("AuthToken", encryptedAuthToken);
+			if (buildNumber && buildNumber >= 7163) { 
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			var response = sm.execute();
+			responseCode = response.getStatusCode();
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if(responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+		return responseJSON;
+	},
+
+	getIsSelectedOrder: function(ldapName) {
+		var response = {};
+		var selectedFields = [{"order":1,"ldapName":"givenName"},{"order":2,"ldapName":"sn"},{"order":3,"ldapName":"password"},{"order":4,"ldapName":"mobile"},{"order":5,"ldapName":"telephoneNumber"},{"order":6,"ldapName":"title"},{"order":7,"ldapName":"manager"}];
+		for(var i=0;i<selectedFields.length;i++) {
+			if(ldapName == selectedFields[i].ldapName) {
+				response.isSelected = true;
+				response.order = selectedFields[i].order;
+				return response;
+			}
+		}
+		response.isSelected = false;
+		response.order = 1000;
+		return response;
+	},
+
+	type: 'ADManagerCreateUserFormCustomization'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2022-12-28 13:15:16</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>2bdf3de1978ca110d96d79100153af92</sys_id>
+        <sys_mod_count>82</sys_mod_count>
+        <sys_name>ADManagerCreateUserFormCustomization</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_2bdf3de1978ca110d96d79100153af92</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-01-19 10:08:34</sys_updated_on>
+    </sys_script_include>
+</record_update>

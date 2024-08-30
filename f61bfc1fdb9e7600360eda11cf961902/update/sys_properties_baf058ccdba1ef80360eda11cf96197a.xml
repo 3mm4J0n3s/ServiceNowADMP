@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_properties">
+    <sys_properties action="INSERT_OR_UPDATE">
+        <choices/>
+        <description>List of permissions to be shown on modify ntfs page.</description>
+        <ignore_cache>false</ignore_cache>
+        <is_private>false</is_private>
+        <name>x_manen_admanager.ADSMNTFSSetPermissions</name>
+        <read_roles>x_manen_admanager.admanager_requester</read_roles>
+        <suffix>ADSMNTFSSetPermissions</suffix>
+        <sys_class_name>sys_properties</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-10-29 09:31:43</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>baf058ccdba1ef80360eda11cf96197a</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>x_manen_admanager.ADSMNTFSSetPermissions</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_properties_baf058ccdba1ef80360eda11cf96197a</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-10-29 09:38:59</sys_updated_on>
+        <type>string</type>
+        <value>{"2032127":"Full Control","1245631":"Modify","1179817":"Read and Execute","1179785":"Read","1048854":"Write","131241":"List folder contents","32":"Traverse folder/ execute file","1":"List folder/ read data","128":"Read Attributes","8":"Read Extended Attributes","2":"Create file/ write data","4":"Create folders/ append data","256":"Write Attributes","16":"Write Extended Attributes","64":"Delete sub-folders and files","65536":"Delete","131072":"Read Permissions","262144":"Write Permissions","524288":"Take Ownership"}</value>
+        <write_roles>x_manen_admanager.admanager_admin</write_roles>
+    </sys_properties>
+    <sys_translated_text action="delete_multiple" query="documentkey=baf058ccdba1ef80360eda11cf96197a"/>
+</record_update>

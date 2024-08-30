@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>ADManager Plus Buttons for performing actions</description>
+        <media_type/>
+        <name>ADManagerButtons</name>
+        <scoped_name>x_manen_admanager_ADManagerButtons</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-20 16:08:48</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>efcbd11edb8af0105ce09db2ca96191e</sys_id>
+        <sys_mod_count>39</sys_mod_count>
+        <sys_name>ADManagerButtons</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_macro_efcbd11edb8af0105ce09db2ca96191e</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-21 10:04:59</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<div class="submit_server_settings" style="display: none;">
+		<hr/>
+		<div style='float: right'>
+			<span style='color: grey; position: relative; top: 2px'>Step 2 of 3</span>
+			<button type="button" onClick="performAction('backToLandingPage');" class="btn btn-default" style="margin-left: 15px">Previous</button>
+			<button type="button" onClick="submitServerSettings();" class="btn btn-primary" style="margin-left: 15px">Next</button>
+		</div>
+	</div>
+	<div class="submit_admin_credentials" style="display: none;">
+		<hr/>
+		<div style='float: right'>
+			<span style='color: grey; position: relative; top: 2px'>Step 3 of 3</span>
+			<button type="button" onClick="performAction('backToServerSettingsPage');" class="btn btn-default" style="margin-left: 15px">Previous</button>
+			<button type="button" onClick="submitAdminCredentials();" class="btn btn-primary" style="margin-left: 15px">Finish</button>
+		</div>
+	</div>
+	<div class='technician_authtoken_edit'>
+		<a onclick='editTechnicianAuthtoken();'>Edit</a>
+	</div>
+	<div class='technician_authtoken_config_edit'>
+		<a onclick='editTechnicianAuthtokenConfig();'>Edit</a>
+	</div>
+	<div class="validate_technician_authtoken" style="display: none;">
+		<hr/>
+		<div style='float: right'>
+			<span style='color: grey; position: relative; top: 2px'>Step 3 of 3</span>
+			<button type="button" onClick="performAction('backToServerSettingsPage');" class="btn btn-default" style="margin-left: 15px">Previous</button>
+			<button type="button" onClick="validateTechnicianAuthtoken();" class="btn btn-primary" style="margin-left: 15px">Validate</button>
+		</div>
+	</div>
+	<div class="submit_technician_authtoken" style="display: none;">
+		<hr/>
+		<div style='float: right'>
+			<span style='color: grey; position: relative; top: 2px'>Step 3 of 3</span>
+			<button type="button" onClick="performAction('backToServerSettingsPage');" class="btn btn-default" style="margin-left: 15px">Previous</button>
+			<button type="button" onClick="submitTechnicianAuthtoken();" class="btn btn-primary" style="margin-left: 15px;">Finish</button>
+		</div>
+	</div>
+	<div class="update_server_settings" style="display: none;">
+		<button type="button" onClick="openUpdateServerSettings();" data-toggle="modal" data-target="#admp_confirm_modal" class="btn btn-primary">Connect</button>
+		<button type="button" onClick="editServerSettings(false);" class="btn btn-default" style="margin-left: 15px">Cancel</button>
+	</div>
+	<div class="update_admin_credentials" style="display: none;">
+		<button type="button" onClick="submitAdminCredentials(true);" class="btn btn-primary">Update</button>
+		<button type="button" onClick="editAdminCredentials(false);" class="btn btn-default" style="margin-left: 15px">Cancel</button>
+	</div>
+	<div class="update_validate_technician_authtoken" style="display: none;margin-bottom: 100px;">
+		<button type="button" onClick="updateValidateTechnicianAuthtoken();" class="btn btn-primary">Validate</button>
+		<button type="button" onClick="editTechnicianAuthtokenHover(false);" class="btn btn-default" style="margin-left: 15px">Cancel</button>
+	</div>
+	<div class="update_submit_technician_authtoken" style="display: none;margin-bottom: 100px;">
+		<button type="button" onClick="isTechnicianAuthtokenAssociated();" class="btn btn-primary">Update</button>
+		<button type="button" onClick="editTechnicianAuthtokenHover(false);" class="btn btn-default" style="margin-left: 15px">Cancel</button>
+	</div>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

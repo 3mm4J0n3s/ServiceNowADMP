@@ -1,0 +1,921 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_manen_admanager.ADManagerConfigurationHandler</api_name>
+        <caller_access/>
+        <client_callable>true</client_callable>
+        <description>ADManager Plus Configuration Handler</description>
+        <name>ADManagerConfigurationHandler</name>
+        <script><![CDATA[var ADManagerConfigurationHandler = Class.create();
+ADManagerConfigurationHandler.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+	connectToAdmp: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+
+		var admpServerUrl = this.getParameter('admpServerUrl');
+		var useExistingMidServer = this.getParameter('useExistingMidServer');
+		var midServerDisplayValue = this.getParameter('midServerDisplayValue');
+		var getProductVersion = this.getParameter('getProductVersion');
+		var getDomainList = this.getParameter('getDomainList');
+		var productVersionResponse = {};
+		var domainListResponse = {};
+		var publicKeyResponse = {};
+
+		if(admpServerUrl == null) {
+			admpServerUrl = this.getAdmpServerUrl();
+		}
+
+		if(getProductVersion == 'true') {
+			productVersionResponse = this.getAdmpProductVersion(admpServerUrl, useExistingMidServer, midServerDisplayValue);
+			if(productVersionResponse.status == 'false') {
+				return new global.JSON().encode(productVersionResponse);
+			} else if(productVersionResponse.status == 'true') {
+				var admpBuildNumber = parseInt(JSON.parse(productVersionResponse.responseBody).BUILD_NUMBER);
+				if(admpBuildNumber < 7064) {
+					productVersionResponse.status = "false";
+					productVersionResponse.responseBody = "Upgrade ADManager Plus to 7064 or later versions.";
+					productVersionResponse.admpBuildNumber = admpBuildNumber;
+					return new global.JSON().encode(productVersionResponse);
+				} 
+				else if(admpBuildNumber < 7163) {
+					domainListResponse = this.getAdmpDomainList(admpServerUrl, useExistingMidServer, midServerDisplayValue);
+					domainListResponse.admpBuildNumber = admpBuildNumber;
+					return new global.JSON().encode(domainListResponse);
+				}
+				else if(admpBuildNumber >= 7163) {
+					publicKeyResponse = this.getAdmpPublicKey(admpServerUrl, useExistingMidServer, midServerDisplayValue);
+					publicKeyResponse.admpBuildNumber = admpBuildNumber;
+					return new global.JSON().encode(publicKeyResponse);
+				}
+			}
+		}
+
+		if(getDomainList == 'true') {
+			domainListResponse = this.getAdmpDomainList(admpServerUrl, useExistingMidServer, midServerDisplayValue);
+			return new global.JSON().encode(domainListResponse);
+		}
+	},
+
+	getAdmpProductVersion: function(admpServerUrl, useExistingMidServer, midServerDisplayValue) {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var flag = false;
+
+		if(admpServerUrl == null) {
+			admpServerUrl = this.getAdmpServerUrl();
+			flag = true;
+		}
+
+		try {
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerProductVersion', 'GetProductVersion');
+			if(useExistingMidServer == 'false') {
+				sm.setMIDServer(midServerDisplayValue);
+			}
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			var response = sm.execute();  
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if((responseCode == "0" || responseCode == "500") && !flag) {
+			responseJSON.responseBody = '<b>Sorry, unable to complete the configuration. It might be due to,</b><div style="padding-left: 18px;">1. The server name or the port number entered being incorrect</div><div style="padding-left: 18px;">2. ADManager Plus server not being operational</div><div style="padding-left: 18px;">3. MID server not being operational</div>';
+		}
+		return responseJSON;
+	},
+
+	getAdmpDomainList: function(admpServerUrl, useExistingMidServer, midServerDisplayValue) {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var isClientCall = false;
+
+		if(admpServerUrl == null) {
+			isClientCall = true;
+			admpServerUrl = this.getAdmpServerUrl();
+		}
+
+		try {
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetDomainList', 'post');
+			if(useExistingMidServer == 'false') {
+				sm.setMIDServer(midServerDisplayValue);
+			}
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('methodToCall', 'domainList');
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			var response = sm.execute();
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if((responseCode == "0" || responseCode == "500") && !isClientCall) {
+			responseJSON.responseBody = '<b>Sorry, unable to complete the configuration. It might be due to,</b><div style="padding-left: 18px;">1. The server name or the port number entered being incorrect</div><div style="padding-left: 18px;">2. ADManager Plus server not being operational</div><div style="padding-left: 18px;">3. MID server not being operational</div>';
+		}
+		if(isClientCall) return new global.JSON().encode(responseJSON);
+		return responseJSON;
+	},
+
+	getAdmpPublicKey: function(admpServerUrl, useExistingMidServer, midServerDisplayValue) {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+		var flag = false;
+
+		if(admpServerUrl == null) {
+			admpServerUrl = this.getAdmpServerUrl();
+			flag = true;
+		}
+
+		try {
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetPublicKey', 'GetPublicKey');
+			if(useExistingMidServer == 'false') {
+				sm.setMIDServer(midServerDisplayValue);
+			}
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			var response = sm.execute();  
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if((responseCode == "0" || responseCode == "500") && !flag) {
+			responseJSON.responseBody = '<b>Sorry, unable to complete the configuration. It might be due to,</b><div style="padding-left: 18px;">1. The server name or the port number entered being incorrect</div><div style="padding-left: 18px;">2. ADManager Plus server not being operational</div><div style="padding-left: 18px;">3. MID server not being operational</div>';
+		}
+		if(responseJSON.responseCode == 200 && responseJSON.status == "true" && JSON.parse(responseJSON.responseBody).status == "0") {
+			var publicKeyResponseBody = JSON.parse(responseJSON.responseBody);
+			publicKeyResponseBody.statusMessage += " <a target='_blank' href='https://www.manageengine.com/products/ad-manager/help/admin-settings/third-party-integrations/servicenow.html?utm_source=servicenow'>Learn more...</a>";
+			responseJSON.responseBody = JSON.stringify(publicKeyResponseBody);
+		}
+		return responseJSON;
+	},
+
+	getAuthToken: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+
+		var isUrlChanged = this.getParameter('isUrlChanged');
+		var admpServerUrl = this.getParameter('admpServerUrl');
+		var useMidServer = this.getParameter('useMidServer');
+		var useExistingMidServer = this.getParameter('useExistingMidServer');
+		var midServerSysId = this.getParameter('midServerSysId');
+		var midServerDisplayValue = this.getParameter('midServerDisplayValue');
+		var admpDomainList = this.getParameter('admpDomainList');
+		var admpUsername = this.getParameter('admpUsername');
+		var admpPassword = this.getParameter('admpPassword');
+		var admpDomain = this.getParameter('admpDomain');
+
+		try {
+			//  Might throw exception if message doesn't exist or not visible due to scope.
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetAuthToken', 'post');
+			if(useExistingMidServer == 'false') {
+				sm.setMIDServer(midServerDisplayValue);
+			}
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('loginName', admpUsername);
+			sm.setStringParameterNoEscape('password', admpPassword);
+			sm.setStringParameter('domainName', admpDomain);
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			//  Might throw exception if http connection timed out or some issue with sending request itself because of encryption/decryption of password.
+			var response = sm.execute();  
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		//  ADManagerErrorhandler will check the response & throw proper error.
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if(responseCode == "0" || responseCode == "500") {
+			responseJSON.responseBody = 'Cannot connect to ADManager Plus. Possible reasons could be stopping ADManager Plus service or MID Server being down.';
+		}
+		if(responseJSON.status == 'false') {
+			return new global.JSON().encode(responseJSON);
+		}
+		var authResponseBody = JSON.parse(responseJSON.responseBody);
+		if(responseJSON.status == 'true' && (authResponseBody.LoginStatusMessage != 'Success' || authResponseBody.LoginStatus != 'true')) {
+			responseJSON.status == 'false';
+			return new global.JSON().encode(responseJSON);
+		}
+
+		var authToken = authResponseBody.AuthTicket;
+		responseJSON = JSON.parse(new ADManagerAssociateUserHandler().getAllTechnicianDetails(admpServerUrl, authToken, useExistingMidServer, midServerDisplayValue));
+		if(responseJSON.status == "false") {
+			return new global.JSON().encode(responseJSON);
+		}
+
+		var allTechResponseBody = JSON.parse(responseJSON.responseBody);
+		responseJSON = this.initialConfiguration(authResponseBody, allTechResponseBody, isUrlChanged, admpServerUrl, useMidServer, midServerSysId, admpDomainList);
+		return new global.JSON().encode(responseJSON);
+	},
+
+	initialConfiguration: function(authResponseBody, allTechResponseBody, isUrlChanged, admpServerUrl, useMidServer, midServer, admpDomainList) {
+		var responseJSON = {};
+		try {
+			var associationHandler = new ADManagerAssociateUserHandler();
+			var admpTechnician = associationHandler.getTechnicianFromList(allTechResponseBody, authResponseBody.LoginId);
+			var serviceNowUser  = gs.getUserID();
+			var authToken = authResponseBody.AuthTicket;
+
+			if(isUrlChanged == 'false') {
+				var response1 = associationHandler.isServiceNowUserNotExists(serviceNowUser, '-1');
+				var response2 = associationHandler.isAdmpTechnicianNotExists(admpTechnician, '-1');
+				if(response1.status == 'true' && response2.status == 'true') {
+					//both servicenow user and admp technician not exists in association
+					associationHandler.addNewAssociation(admpTechnician, serviceNowUser, authToken);
+				}
+				else if(response1.status == 'false' && (response1.admpTechnicianLoginId == admpTechnician.LOGIN_ID)) {
+					//servicenow user exists in association, but mapped to the same admp technician as the newly entered admp technician.
+					associationHandler.updateAuthToken(authToken, serviceNowUser);
+				}
+				else if(response1.status == 'false' && response2.status == 'true') {
+					// servicenow user exists in association but admp technician not exists in association
+					associationHandler.updateExistingAssociation(admpTechnician, serviceNowUser, authToken, response1.technicianSysId, response1.associationSysId);
+				}
+				else if(response2.status == 'false') {
+					responseJSON.status = 'false';
+					var errorMsg = response2.admpTechnicianDisplayName +' is ' + 'already associated. Please disassociate the mapping and try again.';
+					responseJSON.responseBody = errorMsg;
+					return responseJSON;
+				}
+			}
+
+			new ADManagerMIDServerHandler().setMIDServerToRestMessages(midServer); //update MID server in all ADManager Plus REST messages(if midServer is null, it is cleared)
+
+			if(isUrlChanged == 'true') {
+				associationHandler.deleteAllAssociation(); //delete all existing association before default Associate User Mapping
+				associationHandler.addNewAssociation(admpTechnician, serviceNowUser, authToken); //map the logged in ServiceNow User with the ADMP Technician
+				this.fillActionsTable(); //delete existing entries and populate ADManager Plus Actions configuration with default status set to true
+				new ADManagerCreateUserFormCustomization().deleteAllEntries(); //delete existing entries from ADManager Plus Create User Form Fields table
+				new ADManagerActionHandler().toggleModulesCatalogs(true); //enable modules and service catalogs
+			}
+			this.deleteExistingConfiguration(); //delete existing ADManager Plus configuration details
+			var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+			configurationRecord.initialize();
+			configurationRecord.admp_server_url = admpServerUrl;
+			configurationRecord.use_mid_server = useMidServer;
+			configurationRecord.mid_server = midServer;
+			configurationRecord.admp_domain_list = admpDomainList;
+			configurationRecord.admp_username = admpTechnician.NAME;
+			configurationRecord.admp_domain = admpTechnician.DOMAINNAME;
+			configurationRecord.admp_authtoken = authToken;
+			configurationRecord.is_form_context_menu_enabled = true;
+			configurationRecord.is_service_catalog_enabled = true;
+			configurationRecord.insert(); //save new ADManager Plus configuration details
+
+			responseJSON.status = 'true';
+			//  responseJSON.responseBody = '';
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return responseJSON;
+	},
+
+	isNotAssociated: function() {
+		var responseJSON = {};
+		try {
+			var admpTechnicianDisplayName = this.getParameter("admpTechnicianDisplayName");
+			var serviceNowUser  = gs.getUserID();
+			var response1 = new ADManagerAssociateUserHandler().isServiceNowUserNotExists(serviceNowUser, '-1');
+			var response2 = this.isAdmpTechnicianNotExists(admpTechnicianDisplayName);
+			// both servicenow user and admp technician not exists in association
+			if(response1.status == 'true' && response2.status == 'true') {
+				responseJSON.status = 'true';
+			}
+			// servicenow user exists in association, but mapped to the same admp technician as the newly entered admp technician.
+			else if(response1.status == 'false' && (response1.admpTechnicianDisplayName == admpTechnicianDisplayName)) {
+				responseJSON.status = 'true';
+			}
+			// servicenow user exists in association but admp technician not exists in association
+			else if(response1.status == 'false' && response2.status == 'true') {
+				responseJSON.status = 'true';
+			}
+			else if(response2.status == 'false') {
+				responseJSON.status = 'false';
+				var errorMsg = admpTechnicianDisplayName +' is already associated with ' + response2.serviceNowUser +'. Please disassociate the mapping and try again.';
+				responseJSON.responseBody = errorMsg;
+			}
+
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	isAdmpTechnicianNotExists: function(admpTechnicianDisplayName) {
+		var responseJSON = {};
+		try {
+			var admpTechnicians = new GlideRecordSecure('x_manen_admanager_admanagertechnicians');
+			admpTechnicians.addQuery('display_name', admpTechnicianDisplayName);
+			admpTechnicians.query();
+			if(admpTechnicians.next()) {
+				responseJSON.status = "false";
+				var associatedUsers = new GlideRecordSecure('x_manen_admanager_admanagerassociateuserdetails');
+				associatedUsers.addQuery('admp_technician', admpTechnicians.sys_id);
+				associatedUsers.query();
+				if(associatedUsers.next())
+					responseJSON.serviceNowUser = associatedUsers.servicenow_user.name.toString();
+				return responseJSON;
+			}
+			responseJSON.status = "true";
+		}
+		catch(ex) {
+			responseJSON.status = "false";
+		}
+		return responseJSON;
+	},
+
+	deleteExistingConfiguration: function() {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.deleteMultiple();
+	},
+
+	isADMPServerConfigured: function() {
+		var responseJSON = {};
+		try {
+			// ppm handling
+			this.updateManager();
+
+			var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+			configurationRecord.query();
+			var rowCount = configurationRecord.getRowCount();
+			var serverSettings = {};
+			if(rowCount > 0 && configurationRecord.next()) {
+				serverSettings.serverUrl = configurationRecord.admp_server_url.toString();
+				serverSettings.useMidServer = configurationRecord.use_mid_server.toString();
+				serverSettings.midServerSysId = configurationRecord.mid_server.toString();
+				serverSettings.admpUsername = configurationRecord.admp_username.toString();
+				serverSettings.admpDomain = configurationRecord.admp_domain.toString();
+				serverSettings.domainList = configurationRecord.admp_domain_list.toString();
+				serverSettings.isFormContextMenuEnabled = configurationRecord.is_form_context_menu_enabled.toString();
+				serverSettings.isServiceCatalogEnabled = configurationRecord.is_service_catalog_enabled.toString();
+
+				responseJSON.status = 'true';
+				responseJSON.serverSettings = serverSettings;
+				responseJSON.productVersionResponse = this.getAdmpProductVersion(serverSettings.serverUrl);
+				responseJSON.publicKeyResponse = this.getAdmpPublicKey(serverSettings.serverUrl);
+				return new global.JSON().encode(responseJSON);
+			}
+			new ADManagerActionHandler().toggleModulesCatalogs(false);
+			// this.toggleServiceCatalog(false);
+			// this.toggleFormContextMenu(false);
+			responseJSON.status = 'false';
+		} catch(ex) {
+			responseJSON.status = 'false';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	updateManager: function() {
+		var responseJSON = {};
+		try {
+			var response = this.checkOldTables();
+			if(response.status == "true") {
+				// delete old table entries
+				this.deleteOldTableEntries();
+
+				// delete existing ADManager Plus configuration details
+				this.deleteExistingConfiguration();
+
+				// save new ADManager Plus configuration details
+				var serverSettings = response.serverSettings;
+				var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+				configurationRecord.initialize();
+				configurationRecord.admp_server_url = serverSettings.admpServerUrl;
+				configurationRecord.use_mid_server = serverSettings.useMidServer;
+				configurationRecord.mid_server = serverSettings.midServerSysId;
+				configurationRecord.admp_domain_list = serverSettings.domainList;
+				configurationRecord.admp_username = serverSettings.admpUsername;
+				configurationRecord.admp_domain = serverSettings.admpDomain;
+				configurationRecord.admp_authtoken = serverSettings.authtoken;
+				configurationRecord.insert();
+
+				// update MID server in all ADManager Plus REST messages(if midServer is null, it is cleared)
+				new ADManagerMIDServerHandler().setMIDServerToRestMessages(serverSettings.midServerSysId);
+
+				var associationHandler = new ADManagerAssociateUserHandler();
+				var techResponse = JSON.parse(associationHandler.getAllTechnicianDetails());
+				if(techResponse.status == "true") {
+					var allTechResponseBody = JSON.parse(techResponse.responseBody);
+					var admpTechnician = associationHandler.getTechnicianFromList(allTechResponseBody, serverSettings.admpLoginId);
+					var serviceNowUser  = gs.getUserID();
+					var authToken = serverSettings.authtoken;
+
+					//  delete all existing association before default Associate User Mapping
+					associationHandler.deleteAllAssociation();
+
+					//  map the logged in ServiceNow User with the ADMP Technician
+					associationHandler.addNewAssociation(admpTechnician, serviceNowUser, authToken);
+				}
+				responseJSON.status = 'true';
+			} else if(response.status == "false") {
+				responseJSON.status = 'false';
+			}
+		} catch(ex) {
+			responseJSON.status = 'false';
+		}
+		return responseJSON;
+	},
+
+	deleteOldTableEntries: function() {
+		var domainDetailsTable = new GlideRecordSecure('x_manen_admanager_admanagerdomaindetails');
+		domainDetailsTable.deleteMultiple();
+		var loginDomainDetailsTable = new GlideRecordSecure('x_manen_admanager_admanagerlogindomaindetails');
+		loginDomainDetailsTable.deleteMultiple();
+		var authObjectTable = new GlideRecordSecure('x_manen_admanager_admanagerauthobject');
+		authObjectTable.deleteMultiple();
+		var serverDetailsTable = new GlideRecordSecure('x_manen_admanager_admanagerserverdetails');
+		serverDetailsTable.deleteMultiple();
+		var actionsListTable= new GlideRecordSecure('x_manen_admanager_admanageractionslist');
+		actionsListTable.deleteMultiple();
+		var templateListTable = new GlideRecordSecure('x_manen_admanager_admanagersuctemplatelist');
+		templateListTable.deleteMultiple();
+	},
+
+	checkOldTables: function() {
+		var responseJSON = {};
+		try {
+			var serverDetailsRecord = new GlideRecordSecure('x_manen_admanager_admanagerserverdetails');
+			serverDetailsRecord.query();
+			var serverSettings = {};
+			if(serverDetailsRecord.getRowCount() > 0 && serverDetailsRecord.next()) {
+				var buildNumber = serverDetailsRecord.build_number.toString();
+				if(buildNumber >= 7064) {
+					var protocol = serverDetailsRecord.protocol_settings.toString();
+					var hostName = serverDetailsRecord.server_name.toString();
+					var portNumber = serverDetailsRecord.server_port.toString();
+					var admpServerUrl = protocol + "://" + hostName + ":" + portNumber;
+					serverSettings.admpServerUrl = admpServerUrl.toLowerCase();
+					serverSettings.useMidServer = serverDetailsRecord.use_mid_server.toString();
+					serverSettings.midServerSysId = serverDetailsRecord.mid_server.toString();
+					serverSettings.admpUsername = serverDetailsRecord.loginname.toString();
+					serverSettings.admpDomain = serverDetailsRecord.domain_name.domain_flat_name.toString();
+					var authObjectRecord = new GlideRecordSecure('x_manen_admanager_admanagerauthobject');
+					authObjectRecord.query();
+					if(authObjectRecord.next()) {
+						serverSettings.authtoken = authObjectRecord.authtoken.toString();
+						serverSettings.admpLoginId = authObjectRecord.login_id.toString();
+					}
+					var domainDetailsRecord = new GlideRecordSecure('x_manen_admanager_admanagerlogindomaindetails');
+					domainDetailsRecord.query();
+					var domainList = {};
+					while(domainDetailsRecord.next()) {
+						domainList[domainDetailsRecord.domain_name.toString()] = domainDetailsRecord.domain_flat_name.toString();
+					}
+					serverSettings.domainList = JSON.stringify(domainList);
+					responseJSON.status = 'true';
+					responseJSON.serverSettings = serverSettings;
+					return responseJSON;
+				}
+			}
+			responseJSON.status = 'false';
+		} catch(ex) {
+			responseJSON.status = 'false';
+		}
+		return responseJSON;
+	},
+
+	isAdminAuthTokenValid: function() {
+		var responseJSON = new ADManagerAssociateUserHandler().validateAuthToken(this.getAdminAuthToken());
+		return new global.JSON().encode(responseJSON); 
+	},
+
+	getAdmpServerUrl: function() {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		var admpServerUrl = '';
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			admpServerUrl = configurationRecord.admp_server_url;
+		}
+		return admpServerUrl;
+	},
+
+	getAdminAuthToken: function() {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		var authToken = '';
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			authToken = configurationRecord.admp_authtoken;
+		}
+		return authToken;
+	},
+
+	getAdmpAdminUserName: function() {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		var admpUserName = '';
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			admpUserName = configurationRecord.admp_username;
+		}
+		return admpUserName;
+	},
+
+	isLoggedInUserConfigurer: function() {
+		var isLoggedInUserConfigurer = false;
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.addQuery('servicenow_user', gs.getUserID());
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			isLoggedInUserConfigurer = true;
+		}
+		return isLoggedInUserConfigurer;
+	},
+
+	updateIsFormContextMenuEnabled: function() {
+		var isFormContextMenuEnabled = this.getParameter("isFormContextMenuEnabled");
+		this.toggleFormContextMenu(isFormContextMenuEnabled);
+	},
+
+	updateIsServiceCatalogEnabled: function() {
+		var isServiceCatalogEnabled = this.getParameter("isServiceCatalogEnabled");
+		this.toggleServiceCatalog(isServiceCatalogEnabled);
+
+		var catalogItemList = 'Create User, Delete User, Disable User, Enable User, Reset Password, Unlock User, Add to Group, Remove from Group, Set Folder Permissions, Remove Folder Permissions';
+		new ADManagerActionHandler().toggleCatalogItemVisibility(catalogItemList, isServiceCatalogEnabled);
+	},
+
+	toggleFormContextMenu: function(isEnable) {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			configurationRecord.is_form_context_menu_enabled = isEnable;
+			configurationRecord.update();
+		}
+	},
+
+	toggleServiceCatalog: function(isEnable) {
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			configurationRecord.is_service_catalog_enabled = isEnable;
+			configurationRecord.update();
+		}
+	},
+
+	getAuthInfo: function() {
+		var responseJSON = {};
+		var requestBody, responseBody, responseCode, sm;
+
+		var admpServerUrl = this.getParameter('admpServerUrl');
+		var useExistingMidServer = this.getParameter('useExistingMidServer');
+		var midServerDisplayValue = this.getParameter('midServerDisplayValue');
+		var authToken = this.getParameter('authToken');
+		var buildNumber = this.getParameter('buildNumber');
+		var checkIfViewHDTAuthorized = this.getParameter('checkIfViewHDTAuthorized');
+
+		if(admpServerUrl == null) {
+			admpServerUrl = this.getAdmpServerUrl();
+		}
+
+		try {
+			sm = new sn_ws.RESTMessageV2('x_manen_admanager.ADManagerGetAuthInfo', 'GetAuthInfo');
+			if(useExistingMidServer == 'false') {
+				sm.setMIDServer(midServerDisplayValue);
+			}
+			sm.setStringParameter('url', admpServerUrl);
+			sm.setStringParameter('AuthToken', authToken);
+			if(buildNumber && buildNumber >= 7163) {
+				sm.setQueryParameter("isAuthEncrypted", "true");
+			}
+			sm.setRequestHeader("Referer", gs.getProperty('glide.servlet.uri'));
+			sm.setHttpTimeout(30000);
+			sm.setEccParameter('skip_sensor', 'true');
+			var response = sm.execute();
+			responseBody = response.haveError() ? response.getErrorMessage() : response.getBody();
+			responseCode = response.getStatusCode();
+		} catch (ex) {
+			responseBody = ex.getMessage();
+			responseCode = '500';
+		} finally {
+			requestBody = sm ? sm.getRequestBody() : null;
+		}
+		responseJSON = new ADManagerErrorHandler().handleError(responseCode, responseBody);
+		if(responseJSON.status == "true") {
+			if(checkIfViewHDTAuthorized != "false" &&!this.checkIfViewHDTAuthorized(responseJSON)) {
+				responseJSON.status = 'false';
+				responseJSON.responseBody = 'The given Authtoken is not delegated with the role <b>Help Desk Technicians</b> in ADManager Plus. Kindly contact your ADManager Plus administrator.';
+				return new global.JSON().encode(responseJSON);
+			}
+			var admpTechnicianLoginId = JSON.parse(responseJSON.responseBody).LoginId;
+
+			var getAllTechnicianResponse = JSON.parse(new ADManagerAssociateUserHandler().getAllTechnicianDetails(admpServerUrl, authToken, useExistingMidServer, midServerDisplayValue, buildNumber));
+			if(getAllTechnicianResponse.status == "true") {
+				var getAllTechnicianResponseBody = JSON.parse(getAllTechnicianResponse.responseBody);
+				var admpTechnician = new ADManagerAssociateUserHandler().getTechnicianFromList(getAllTechnicianResponseBody, admpTechnicianLoginId);
+				if(admpTechnician != null) responseJSON.admpTechnician = admpTechnician;
+			}
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	checkIfViewHDTAuthorized: function(responseJSON) {
+		var admpAuthObject = JSON.parse(JSON.parse(responseJSON.responseBody).AdmpAuthObject);
+		var domainsVsActionList = admpAuthObject.domainsVsActionList;
+		for (var domainName in domainsVsActionList) {
+			var actionList = JSON.parse(domainsVsActionList[domainName]);
+			for (var i = 0; i < actionList.length; i++) {
+				if (actionList[i] == 4000) {
+					return true;
+				}
+			}
+		}
+		return false;
+	},
+
+	initialConfigurationForSecurityEnhancement: function() {
+		var responseJSON = {};
+
+		var isUrlChanged = this.getParameter('isUrlChanged');
+		var admpServerUrl = this.getParameter('admpServerUrl');
+		var useMidServer = this.getParameter('useMidServer');
+		var midServerSysId = this.getParameter('midServerSysId');
+		var midServerDisplayValue = this.getParameter('midServerDisplayValue');
+		var admpAuthtoken = this.getParameter('admpAuthtoken');
+		var admpAuthtokenForAssociation = this.getParameter('admpAuthtokenForAssociation');
+		var admpTechnician = this.getParameter('admpTechnician');
+
+		try {
+			var associationHandler = new ADManagerAssociateUserHandler();
+			admpTechnician = JSON.parse(admpTechnician);
+			var serviceNowUser  = gs.getUserID();
+
+			if(isUrlChanged == 'false') {
+				var response1 = associationHandler.isServiceNowUserNotExists(serviceNowUser, '-1');
+				var response2 = associationHandler.isAdmpTechnicianNotExists(admpTechnician, '-1');
+				if(response1.status == 'true' && response2.status == 'true') {
+					//both servicenow user and admp technician not exists in association
+					associationHandler.addNewAssociation(admpTechnician, serviceNowUser, admpAuthtokenForAssociation);
+				}
+				else if(response1.status == 'false' && (response1.admpTechnicianLoginId == admpTechnician.LOGIN_ID)) {
+					//servicenow user exists in association, but mapped to the same admp technician as the newly entered admp technician.
+					associationHandler.updateAuthToken(admpAuthtokenForAssociation, serviceNowUser);
+				}
+				else if(response1.status == 'false' && response2.status == 'true') {
+					//servicenow user exists in association but admp technician not exists in association
+					associationHandler.updateExistingAssociation(admpTechnician, serviceNowUser, admpAuthtokenForAssociation, response1.technicianSysId, response1.associationSysId);
+				}
+				else if(response2.status == 'false') {
+					responseJSON.status = 'false';
+					var errorMsg = response2.admpTechnicianDisplayName +' is already associated. Please disassociate the mapping and try again.';
+					responseJSON.responseBody = errorMsg;
+					return responseJSON;
+				}
+			}
+
+			new ADManagerMIDServerHandler().setMIDServerToRestMessages(midServerSysId); //update MID server in all ADManager Plus REST messages(if midServer is null, it is cleared)
+
+			if(isUrlChanged == 'true') {
+				associationHandler.deleteAllAssociation(); //delete all existing association before default Associate User Mapping
+				associationHandler.addNewAssociation(admpTechnician, serviceNowUser, admpAuthtokenForAssociation); //map the logged in ServiceNow User with the ADMP Technician
+				this.fillActionsTable(); //delete existing entries and populate ADManager Plus Actions configuration with default status set to true
+				new ADManagerCreateUserFormCustomization().deleteAllEntries(); //delete existing entries from ADManager Plus Create User Form Fields table
+				new ADManagerActionHandler().toggleModulesCatalogs(true); //enable modules and service catalogs
+			}
+			this.deleteExistingConfiguration(); //delete existing ADManager Plus configuration details
+
+			var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+			configurationRecord.initialize();
+			configurationRecord.admp_server_url = admpServerUrl;
+			configurationRecord.use_mid_server = useMidServer;
+			configurationRecord.mid_server = midServerSysId;
+			//  configurationRecord.admp_domain_list = admpDomainList;
+			configurationRecord.admp_username = admpTechnician.NAME;
+			configurationRecord.admp_domain = admpTechnician.DOMAINNAME;
+			configurationRecord.admp_authtoken = admpAuthtoken; // encrypted authtoken
+			configurationRecord.is_form_context_menu_enabled = true;
+			configurationRecord.is_service_catalog_enabled = true;
+			configurationRecord.servicenow_user = gs.getUserID();
+			configurationRecord.insert(); //save new ADManager Plus configuration details
+
+			responseJSON.status = 'true';
+			//  responseJSON.responseBody = '';
+		} 
+		catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	getAllAuthTokens: function() {
+		var responseJSON = {};
+		var configurationObject = [];
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.query();
+		while (configurationRecord.next()) {
+			var configuration = {};
+			configuration.sys_id = configurationRecord.sys_id.toString();
+			configuration.authtoken = configurationRecord.admp_authtoken.toString();
+			configuration.key = configurationRecord.admp_username.toString();
+			configurationObject.push(configuration);
+		}
+		responseJSON.configurationObject = configurationObject;
+		var associationObject = [];
+		var associationRecord = new GlideRecordSecure('x_manen_admanager_admanagerassociateuserdetails');
+		associationRecord.query();
+		while (associationRecord.next()) {
+			var association = {};
+			association.sys_id = associationRecord.sys_id.toString();
+			association.authtoken = associationRecord.authtoken.toString();
+			association.key = associationRecord.servicenow_user.toString();
+			associationObject.push(association);
+		}
+		responseJSON.associationObject = associationObject;
+		return new global.JSON().encode(responseJSON);
+	},
+
+	encryptAllAuthTokens: function() {
+		var responseJSON = {};
+		var response = this.getParameter('response');
+		response = JSON.parse(response);
+		var configurationObject = response.configurationObject;
+		for(var i = 0; i < configurationObject.length; i++) {
+			var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+			configurationRecord.addQuery('sys_id', configurationObject[i].sys_id);
+			configurationRecord.query();
+			if (configurationRecord.next()) {
+				configurationRecord.admp_authtoken = configurationObject[i].encryptedAuthToken;
+				configurationRecord.update();
+			}
+		}
+		var associationObject = response.associationObject;
+		for(var j = 0; j < associationObject.length; j++) {
+			var associationRecord = new GlideRecordSecure('x_manen_admanager_admanagerassociateuserdetails');
+			associationRecord.addQuery('sys_id', associationObject[j].sys_id);
+			associationRecord.query();
+			if (associationRecord.next()) {
+				associationRecord.authtoken = associationObject[j].encryptedAuthToken;
+				associationRecord.update();
+			}
+		}
+		responseJSON.status = 'true';
+		return new global.JSON().encode(responseJSON);
+	},
+	
+	deleteMidServerAndTables: function() {
+		new ADManagerMIDServerHandler().setMIDServerToRestMessages("");
+		var a = new GlideRecordSecure('x_manen_admanager_admanageraccessmaskmapping');
+		a.deleteMultiple();
+		var b = new GlideRecordSecure('x_manen_admanager_admanageraccessmasks');
+		b.deleteMultiple();
+		var c = new GlideRecordSecure('x_manen_admanager_admanageractionslist');
+		c.deleteMultiple();
+		var d = new GlideRecordSecure('x_manen_admanager_admanagerassociateuserdetails');
+		d.deleteMultiple();
+		var e = new GlideRecordSecure('x_manen_admanager_admanagerauthobject');
+		e.deleteMultiple();
+		var f = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		f.deleteMultiple();
+		var g = new GlideRecordSecure('x_manen_admanager_admanagerdomaindetails');
+		g.deleteMultiple();
+		var h = new GlideRecordSecure('x_manen_admanager_admanagerhskey');
+		h.deleteMultiple();
+		var i = new GlideRecordSecure('x_manen_admanager_admanagerlogindomaindetails');
+		i.deleteMultiple();
+		var j = new GlideRecordSecure('x_manen_admanager_admanagerserverdetails');
+		j.deleteMultiple();
+		var k = new GlideRecordSecure('x_manen_admanager_admanagersuctemplatelist');
+		k.deleteMultiple();
+		var l = new GlideRecordSecure('x_manen_admanager_admanagertechnicians');
+		l.deleteMultiple();
+		var m = new GlideRecordSecure('x_manen_admanager_admanageractions');
+		m.deleteMultiple();		
+		var n = new GlideRecordSecure('x_manen_admanager_admanagerusercreationformfields');
+		n.deleteMultiple();
+	},
+
+	// 	--------------------------------------------------Actions Module starts-------------------------------------------------------
+	isFormContextMenuEnabled: function(action) {
+		var isFormContextMenuEnabled = false;
+		// check if 'Enable ADManager Plus Incident Form Context Menu' is enabled in Configuration Settings
+		var configurationRecord = new GlideRecordSecure('x_manen_admanager_admanagerconfigurationdetails');
+		configurationRecord.query();
+		if(configurationRecord.next()) {
+			isFormContextMenuEnabled = configurationRecord.is_form_context_menu_enabled;
+		}
+		// check if a particular action is enabled in Actions module
+		var actionsRecord = new GlideRecordSecure('x_manen_admanager_admanageractions');
+		actionsRecord.addQuery("title", action);
+		actionsRecord.query();
+		if(actionsRecord.next()) {
+			isFormContextMenuEnabled = isFormContextMenuEnabled && actionsRecord.status;
+		}
+		return isFormContextMenuEnabled;
+	},
+
+	fillActionsTable: function() {
+		// delete existing entries
+		var actionsRecord = new GlideRecordSecure('x_manen_admanager_admanageractions');
+		actionsRecord.deleteMultiple();
+
+		// add new entries with default status set to true
+		var actions = [{"order":1,"title":"Create User","actionName":"Create User","description":"Create User"},{"order":2,"title":"Delete User","actionName":"Delete User","description":"Delete User"},{"order":3,"title":"Enable User","actionName":"Enable User","description":"Enable User"},{"order":4,"title":"Disable User","actionName":"Disable User","description":"Disable User"},{"order":5,"title":"Reset Password","actionName":"Reset Password","description":"Reset Password"},{"order":6,"title":"Unlock User","actionName":"Unlock User","description":"Unlock User"},{"order":7,"title":"Modify Manager","actionName":"Modify Manager","description":"Modify Manager"},{"order":8,"title":"Modify Department","actionName":"Modify Department","description":"Modify Department"},{"order":9,"title":"Add to Group","actionName":"Add to Group","description":"Add to Group"},{"order":10,"title":"Remove from Group","actionName":"Remove from Group","description":"Remove from Group"},{"order":11,"title":"Set Folder Permissions","actionName":"Set Folder Permissions","description":"Set Folder Permissions"},{"order":12,"title":"Remove Folder Permissions","actionName":"Remove Folder Permissions","description":"Remove Folder Permissions"}];
+		for(var i=0;i<actions.length;i++) {
+			actionsRecord = new GlideRecordSecure('x_manen_admanager_admanageractions');
+			actionsRecord.initialize();
+			actionsRecord.order = actions[i].order;
+			actionsRecord.title = (actions[i].title).toString();
+			actionsRecord.status = true;
+			actionsRecord.action_name = (actions[i].actionName).toString();
+			actionsRecord.description = (actions[i].description).toString();
+			actionsRecord.insert();
+			new ADManagerActionHandler().setModuleHint((actions[i].title).toString(), (actions[i].description).toString());
+		}
+	},
+
+	getActionsTable: function() {
+		var responseJSON = {};
+		try {
+			var actionsObj = [];
+			var actionsRecord = new GlideRecordSecure('x_manen_admanager_admanageractions');
+			actionsRecord.orderBy('order');
+			actionsRecord.query();
+			while (actionsRecord.next()) {
+				var actions = {};
+				actions.sysId = actionsRecord.sys_id.toString();
+				actions.title = actionsRecord.title.toString();
+				actions.status = actionsRecord.status.toString();
+				actions.actionName = actionsRecord.action_name.toString();
+				actions.description = actionsRecord.description.toString();
+				actionsObj.push(actions);
+			}
+			responseJSON.status = 'true';
+			responseJSON.actionsObj = actionsObj;
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+
+	modifyActionsTable: function(action) {
+		var responseJSON = {};
+		try {
+			if(!action) action = this.getParameter('action');
+			action = JSON.parse(action);
+			var actionsRecord = new GlideRecordSecure('x_manen_admanager_admanageractions');
+			actionsRecord.addQuery('sys_id', action.sysId);
+			actionsRecord.query();
+			if (actionsRecord.next()) {
+				var status = (action.status == 'true')? true: false;
+				actionsRecord.status = status;
+				actionsRecord.description = (action.description).toString();
+				actionsRecord.update();
+
+				new ADManagerActionHandler().toggleModuleVisibility(action.title, status);
+				new ADManagerActionHandler().toggleCatalogItemVisibility(action.title, status); 
+				new ADManagerActionHandler().setModuleHint(action.title, action.description);
+			}
+			return this.getActionsTable();
+
+		} catch(ex) {
+			responseJSON.status = 'false';
+			responseJSON.responseBody = 'Some internal error occured.';
+		}
+		return new global.JSON().encode(responseJSON);
+	},
+	// 	-------------------------------------------------------Actions Module ends-----------------------------------------------------------
+
+	type: 'ADManagerConfigurationHandler'
+});]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-19 05:47:19</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>1383c635dbc2b0105ce09db2ca9619cb</sys_id>
+        <sys_mod_count>340</sys_mod_count>
+        <sys_name>ADManagerConfigurationHandler</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_script_include_1383c635dbc2b0105ce09db2ca9619cb</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-03-22 07:43:54</sys_updated_on>
+    </sys_script_include>
+</record_update>

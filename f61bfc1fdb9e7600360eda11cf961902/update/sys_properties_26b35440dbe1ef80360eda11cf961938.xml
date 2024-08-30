@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_properties">
+    <sys_properties action="INSERT_OR_UPDATE">
+        <choices/>
+        <description>ADSMAccessMasks</description>
+        <ignore_cache>false</ignore_cache>
+        <is_private>false</is_private>
+        <name>x_manen_admanager.ADSMAccessMasks</name>
+        <read_roles>x_manen_admanager.admanager_requester</read_roles>
+        <suffix>ADSMAccessMasks</suffix>
+        <sys_class_name>sys_properties</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-10-29 09:37:22</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>26b35440dbe1ef80360eda11cf961938</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>x_manen_admanager.ADSMAccessMasks</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_properties_26b35440dbe1ef80360eda11cf961938</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-10-29 09:37:22</sys_updated_on>
+        <type>string</type>
+        <value>[{"access_mask_id":"2032127", "access_mask_string":"Full Control", "priority":"1", "is_advanced_permission":"false"}, {"access_mask_id":"32", "access_mask_string":"Traverse folder/ execute file", "priority":"10", "is_advanced_permission":"true"}, {"access_mask_id":"1", "access_mask_string":"List folder/ read data", "priority":"11", "is_advanced_permission":"true"}, {"access_mask_id":"128", "access_mask_string":"Read Attributes", "priority":"12", "is_advanced_permission":"true"}, {"access_mask_id":"8", "access_mask_string":"Read Extended Attributes", "priority":"13", "is_advanced_permission":"true"}, {"access_mask_id":"2", "access_mask_string":"Create file/ write data", "priority":"14", "is_advanced_permission":"true"}, {"access_mask_id":"4", "access_mask_string":"Create folders/ append data", "priority":"15", "is_advanced_permission":"true"}, {"access_mask_id":"256", "access_mask_string":"Write Attributes", "priority":"16", "is_advanced_permission":"true"}, {"access_mask_id":"16", "access_mask_string":"Write Extended Attributes", "priority":"17", "is_advanced_permission":"true"}, {"access_mask_id":"64", "access_mask_string":"Delete sub-folders and files", "priority":"18", "is_advanced_permission":"true"}, {"access_mask_id":"65536", "access_mask_string":"Delete", "priority":"19", "is_advanced_permission":"true"}, {"access_mask_id":"131072", "access_mask_string":"Read Permissions", "priority":"20", "is_advanced_permission":"true"}, {"access_mask_id":"262144", "access_mask_string":"Write Permissions", "priority":"21", "is_advanced_permission":"true"}, {"access_mask_id":"524288", "access_mask_string":"Take Ownership", "priority":"22", "is_advanced_permission":"true"}, {"access_mask_id":"1245631", "access_mask_string":"Modify", "priority":"2", "is_advanced_permission":"false"}, {"access_mask_id":"1179817", "access_mask_string":"Read and Execute", "priority":"3", "is_advanced_permission":"false"}, {"access_mask_id":"1179785", "access_mask_string":"Read", "priority":"4", "is_advanced_permission":"false"}, {"access_mask_id":"1048854", "access_mask_string":"Write", "priority":"5", "is_advanced_permission":"false"}, {"access_mask_id":"131241", "access_mask_string":"List folder contents", "priority":"6", "is_advanced_permission":"false"}]</value>
+        <write_roles>x_manen_admanager.admanager_admin</write_roles>
+    </sys_properties>
+    <sys_translated_text action="delete_multiple" query="documentkey=26b35440dbe1ef80360eda11cf961938"/>
+</record_update>

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script><![CDATA[function showTroubleshootingPage() {
+	$j('#admp_support_page').hide();
+	$j('#troubleshoot_button').hide();
+	$j('#admp_troubleshooting_page').show();
+	$j('#back_button').show();
+}
+
+function showSupportPage() {
+	$j('#admp_troubleshooting_page').hide();
+	$j('#back_button').hide();
+	$j('#admp_support_page').show();
+	$j('#troubleshoot_button').show();
+}]]></client_script>
+        <description>ADManager Help</description>
+        <direct>false</direct>
+        <endpoint>x_manen_admanager_ADManagerHelp.do</endpoint>
+        <html><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+	<link href="9d07c511dbc630105ce09db2ca961977.cssdbx" rel="stylesheet" type="text/css"/>
+	<nav class="navbar navbar-default" role="navigation">
+	   <div class="container-fluid">
+		   <div class="navbar-header">
+			   <button onclick='showSupportPage();' id='back_button' class="btn btn-default icon-chevron-left navbar-btn" style='display: none' title='Back'></button> 
+			   <h1 style="display:inline-block;" class="navbar-title">Support</h1>
+		   </div>
+		   <div class="nav navbar-right">
+			   <button onclick='showTroubleshootingPage();' id='troubleshoot_button' class="btn btn-icon icon-help navbar-btn" title='Troubleshooting'></button>
+		   </div>
+	   </div>
+	</nav>
+	<div id="admp_support_page" style="margin-top: 20px; padding: 0px 15px;">
+		<div class="integrate-support">
+			<div class="tile-wrapper">
+				<div class="col-9">
+					<div class="col-6">
+						<div class="tile-1">
+							<div class="tile-inner">
+								<h3>Request Support</h3>
+								<h4><ul>
+									<li><a target="_blank" href="https://www.manageengine.com/products/ad-manager/request-support.html?utm_source=servicenow">Mail Queries</a></li>
+									<li><a target="_blank" href="https://www.manageengine.com/products/ad-manager?utm_source=servicenow">24/5 Live Chat</a></li>
+									</ul></h4>
+								<span class="admp-sn-sprite icn-large-mail"></span>
+							</div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="tile-2">
+							<div class="tile-inner">
+								<h3>Online Store</h3>
+								<h4><ul>
+									<li><a target="_blank" href="https://store.manageengine.com/ad-manager/store.html?utm_source=servicenow">Buy Now</a></li>
+									<li><a target="_blank" href="http://manageengine.com/products/ad-manager/get-quote.html?utm_source=servicenow">Get Quote</a></li>
+									<li><a target="_blank" href="http://manageengine.com/products/ad-manager/pricing-details.html?utm_source=servicenow">Pricing</a></li>
+									</ul></h4>
+								<span class="admp-sn-sprite icn-large-cart"></span>
+							</div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="tile-3">
+							<div class="tile-inner">
+								<h3>Compare Edition</h3>
+								<h4><ul>
+									<li><a target="_blank" href="https://www.manageengine.com/products/ad-manager/pricing-details.html?utm_source=servicenow#Editioncompare">Standard (Vs) Professional</a></li>
+									</ul></h4>
+								<span class="admp-sn-sprite icn-large-compare"></span>
+							</div>
+						</div>
+					</div>
+					<div class="col-6">
+						<div class="tile-4">
+							<div class="tile-inner">
+								<h3>Knowledge Base</h3>
+								<h4><ul>
+									<li><a target="_blank" href="http://www.manageengine.com/products/ad-manager/document.html?utm_source=servicenow">Documents</a></li>
+									<li><a target="_blank" href="http://www.manageengine.com/products/ad-manager/admanager-kb/knowledge-base.html?utm_source=servicenow">Knowledge Base</a></li>
+									</ul></h4>
+								<span class="admp-sn-sprite icn-large-bulb"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-3">
+					<div class="tile-5">
+						<div class="tile-inner">
+							<h3 class="tile-contact-header">Contact Us</h3>
+							<div class="tile-contact">
+								<span>Toll Free :</span> <a href="tel:+18442451108">+1 844 245 1108</a>
+							</div>
+							<div class="tile-contact">
+								<span>Direct :</span> <a href="tel:+14089169393">+1-408-916-9393</a>
+							</div>
+							<div class="tile-contact last-of-type">
+								<span>Email :</span> <a href="mailto:support@admanagerplus.com">support@admanagerplus.com</a>
+							</div>
+							<div class="tile-contact-chat">
+								<a>
+									<i class="admp-sn-sprite icn-live-chat"></i>
+									<a target="_blank" href="https://www.manageengine.com/products/ad-manager/demo.html?utm_source=servicenow" class="tile-contact-chat-txt"> Schedule a Personalized Demo</a>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	 <div id="admp_troubleshooting_page" style='display: none; margin-top: 20px; padding: 0px 15px;'>
+		<h3 style='padding: 0 0 15px 40px'><b>Troubleshooting</b></h3>
+        <ul style="list-style: none;">
+            <li><span>After the installation of ADManager Plus application on the ServiceNow instance, it is required to provide the following details to connect to ADManager Plus server:</span></li>
+            <li>
+                <ol type="I">
+                    <li>ADManger Plus URL(eg. https://admp:8443)</li>
+                    <li>MID Server configuration</li>
+                </ol>
+            </li>
+            <li><span> On entering and submitting these values, the application will connect to ADManager Plus server and would try to obtain an AuthToken. </span></li>
+        </ul>
+        <ol type="1">
+            <li style='padding: 10px 0px'>
+                If you receive any error message stating that a connection could not be established with the ADManager Plus server, please check the following:
+                <ul type="square">
+                    <li>In any web browser on the local network, check whether the ADManager Login page appears when the URL is entered in the below format: {protocol}://{servername}:{portnumber}</li>
+                    <li>If there is any error, then ADManager Plus server might have been stopped. Please start ADManager Plus server and try again.</li>
+                    <li>Check the port number. By default, it will be 8080 for HTTP and 8443 for HTTPS, but it can be changed.</li>
+                    <li>Check if the firewall is blocking the specified port from being accessed.</li>
+                    <li>Try using the IP address of the machine on which the ADManager Plus server is running.</li>
+                    <li>Check whether the ADManager Plus server is reachable from the MID Server.</li>
+                    <li>Check the configured MID server in ServiceNow console under 'ADManager Plus → Setup'. Check whether the correct hostname is configured in the MID server configuration and also if it is up and running.</li>
+                    <li>If there isn't any MID server configured in the ADManager setup, check if the ADManager server is hosted in the internet and is accessible from an external network</li>
+                </ul>
+            </li>
+            <li style='padding: 10px 0px'>
+                After the ADManager Plus server connection is established, if any error occurs after submitting the login credentials, then:
+                <ul type="square">
+                    <li>Try to logging in to the web application with same username, password and domain name, through any web browser.</li>
+                    <li>Check whether the right domain is selected in the ADManager application setup.</li>
+                    <li>If the user is using the AD user credentials, confirm whether the user has been added as a technician in ADManager Plus server.</li>
+                </ul>
+            </li>
+            <li style='padding: 10px 0px'>
+                If the valid user objects are not appearing in the AD Users List for the given search term:
+                <ul type="square">
+                    <li>Try refreshing the domain to update the user objects in ADManager Plus. It can be accessed through Domain Settings → 'Refresh Domain' in domain record.</li>
+                    <li>Check if DisplayName, FullName or sAMAccountName attributes in AD contains the required search term text.</li>
+                </ul>
+            </li>
+            <li style='padding: 10px 0px'>
+                If ADManager Plus server returns 'Access denied' error message for the AD Action submitted:
+                <ul type="square">
+                    <li>Check if the ADManager Plus technician have required permission to do the specific management operation on the active directory.</li>
+                    <li>If 'Impersonate as Admin' was selected while creating the technician in ADManager Plus, then check whether the ADManager Plus Admin has the required permissions in AD to make those operations.</li>
+                </ul>
+            </li>
+            <li style='padding: 10px 0px'>If the AD action execution call returns an error message with 8-digit error codes, the error might be caused in Active Directory and the error code might be the Windows error code. In that case, troubleshooting tips for that error code can be found in this link: <a target='_blank' href="http://demo.admanagerplus.com/help/misc/troubleshooting_tips.html#Active_Directory_User_Management?utm_source=servicenow">Troubleshooting tips</a>
+            </li>
+        </ol>
+    </div>
+</j:jelly>]]></html>
+        <name>ADManagerHelp</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-08-17 18:38:13</sys_created_on>
+        <sys_customer_update>false</sys_customer_update>
+        <sys_id>21df5e59dbca30105ce09db2ca96194b</sys_id>
+        <sys_mod_count>19</sys_mod_count>
+        <sys_name>ADManagerHelp</sys_name>
+        <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
+        <sys_policy>protected</sys_policy>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
+        <sys_update_name>sys_ui_page_21df5e59dbca30105ce09db2ca96194b</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-09-12 16:07:06</sys_updated_on>
+    </sys_ui_page>
+</record_update>
