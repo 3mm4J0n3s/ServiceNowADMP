@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="51a70798db3134105ce09db2ca961959" label="ADManagerTechnicians" max_length="40" name="x_manen_admanager_admanagertechnicians" type="collection">
+        <element label="Login name" mandatory="true" max_length="255" name="login_name" type="string"/>
+        <element label="Login id" mandatory="true" max_length="40" name="login_id" type="string"/>
+        <element label="Role name" max_length="255" name="role_name" type="string"/>
+        <element label="Domain name" mandatory="true" max_length="255" name="domain_name" type="string"/>
+        <element label="Role object" max_length="5000" name="role_object" type="string"/>
+        <element label="Full name" max_length="255" name="full_name" type="string"/>
+        <element display="true" label="Display name" max_length="255" name="display_name" type="string"/>
+    </element>
+</database>

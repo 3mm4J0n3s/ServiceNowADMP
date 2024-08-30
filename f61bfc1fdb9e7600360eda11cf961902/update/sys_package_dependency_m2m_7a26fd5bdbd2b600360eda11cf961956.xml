@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
     <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
-        <dependency display_value="Text Index" source="com.glide.text_index">75609bb2db022200f71ada11cf9619f6</dependency>
+        <dependency display_value="Text Index" source="com.glide.text_index">923cfb2af832021008dd9cfea425ac2c</dependency>
         <min_version>1.0.0</min_version>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-04-28 13:20:31</sys_created_on>

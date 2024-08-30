@@ -387,13 +387,11 @@ function loadFolderLevel(element)
         <sys_class_name>sys_ui_page</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2018-10-05 09:59:33</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>daa27094db8d6f40360eda11cf9619ae</sys_id>
         <sys_mod_count>14</sys_mod_count>
         <sys_name>ADManagerFolderList</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy>protected</sys_policy>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>sys_ui_page_daa27094db8d6f40360eda11cf9619ae</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

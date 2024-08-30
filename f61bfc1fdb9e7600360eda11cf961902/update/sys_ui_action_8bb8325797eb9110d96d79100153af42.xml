@@ -42,7 +42,6 @@ function redirectToModifyDepartment() {
         <sys_class_name>sys_ui_action</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2022-12-09 07:34:35</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>8bb8325797eb9110d96d79100153af42</sys_id>
@@ -51,7 +50,6 @@ function redirectToModifyDepartment() {
         <sys_overrides/>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy>protected</sys_policy>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>sys_ui_action_8bb8325797eb9110d96d79100153af42</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

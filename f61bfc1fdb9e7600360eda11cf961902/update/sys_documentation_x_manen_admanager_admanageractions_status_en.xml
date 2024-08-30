@@ -11,13 +11,10 @@
             <sys_class_name>sys_documentation</sys_class_name>
             <sys_created_by>admin</sys_created_by>
             <sys_created_on>2022-12-12 12:46:38</sys_created_on>
-            <sys_customer_update>false</sys_customer_update>
-            <sys_id>c5ff935c977b9510d96d79100153afc9</sys_id>
             <sys_mod_count>0</sys_mod_count>
             <sys_name>Status</sys_name>
             <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
             <sys_policy/>
-            <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
             <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
             <sys_update_name>sys_documentation_x_manen_admanager_admanageractions_status_en</sys_update_name>
             <sys_updated_by>admin</sys_updated_by>

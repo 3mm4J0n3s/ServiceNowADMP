@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sys_package_dependency_m2m">
     <sys_package_dependency_m2m action="INSERT_OR_UPDATE">
-        <dependency display_value="System (glidesoft)" source="glidesoft">a2aec332db022200f71ada11cf961935</dependency>
+        <dependency display_value="System (glidesoft)" source="glidesoft">1d3bbf22f832021008dd9cfea425ac30</dependency>
         <min_version/>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-04-28 13:20:17</sys_created_on>

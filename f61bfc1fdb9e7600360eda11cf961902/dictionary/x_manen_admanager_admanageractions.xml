@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="92cd5354977b9510d96d79100153afaa" label="ADManagerActions" max_length="40" name="x_manen_admanager_admanageractions" type="collection">
+        <element label="Description" max_length="500" name="description" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="Order" max_length="40" name="order" type="integer"/>
+        <element attributes="edge_encryption_enabled=true" default="true" label="Status" max_length="40" name="status" type="boolean"/>
+        <element label="Title" max_length="100" name="title" type="string"/>
+        <element label="Action Name" max_length="100" name="action_name" type="string"/>
+    </element>
+</database>

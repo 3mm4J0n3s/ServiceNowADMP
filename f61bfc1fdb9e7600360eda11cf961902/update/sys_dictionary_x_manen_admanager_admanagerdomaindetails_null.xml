@@ -52,12 +52,9 @@
         <sys_class_name>sys_dictionary</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-04-28 09:19:12</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
-        <sys_id>00fe7093dbde7600360eda11cf961917</sys_id>
         <sys_name>x_manen_admanager_admanagerdomaindetails</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>sys_dictionary_x_manen_admanager_admanagerdomaindetails_NULL</sys_update_name>
         <sys_updated_by>system</sys_updated_by>

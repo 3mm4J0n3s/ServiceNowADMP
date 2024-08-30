@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="4c640d5ddb8630105ce09db2ca9619a9" label="ADManagerConfiguration" max_length="40" name="x_manen_admanager_admanagerconfigurationdetails" type="collection">
+        <element label="ADMP Domain List" max_length="5000" name="admp_domain_list" type="string"/>
+        <element attributes="edge_encryption_enabled=true,encode_utf8=false" label="Servicenow user" max_length="32" name="servicenow_user" reference="sys_user" type="reference"/>
+        <element label="ADMP Domain" max_length="255" name="admp_domain" type="string"/>
+        <element label="ADMP Username" max_length="255" name="admp_username" type="string"/>
+        <element attributes="edge_encryption_enabled=true" label="Enable Service Catalog" max_length="40" name="is_service_catalog_enabled" type="boolean"/>
+        <element label="ADMP Authtoken" max_length="255" name="admp_authtoken" type="password2"/>
+        <element attributes="edge_encryption_enabled=true,encode_utf8=false" label="MID Server" max_length="32" name="mid_server" reference="ecc_agent" type="reference"/>
+        <element attributes="edge_encryption_enabled=true" label="Enable Form Context Menu" max_length="40" name="is_form_context_menu_enabled" type="boolean"/>
+        <element label="ADMP URL" max_length="1024" name="admp_server_url" type="url"/>
+        <element attributes="edge_encryption_enabled=true" label="Use MID Server" max_length="40" name="use_mid_server" type="boolean"/>
+        <index name="index">
+            <element name="mid_server"/>
+        </index>
+        <index name="index2">
+            <element name="servicenow_user"/>
+        </index>
+    </element>
+</database>

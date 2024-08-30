@@ -441,13 +441,11 @@
         <sys_class_name>content_css</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2021-08-17 12:00:34</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>9d07c511dbc630105ce09db2ca961977</sys_id>
         <sys_mod_count>57</sys_mod_count>
         <sys_name>ADManagerStyles</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>content_css_9d07c511dbc630105ce09db2ca961977</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

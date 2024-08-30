@@ -882,13 +882,11 @@ transform: scale(0.8);&#13;
         <sys_class_name>content_css</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-07-13 13:48:05</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>fb35d1f7dbfbfac0360eda11cf961997</sys_id>
         <sys_mod_count>28</sys_mod_count>
         <sys_name>ADManagerStyles</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>content_css_fb35d1f7dbfbfac0360eda11cf961997</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

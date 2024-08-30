@@ -17,17 +17,14 @@
         <parent/>
         <roles/>
         <sc_catalog display_value="Service Catalog">e0d08b13c3330100c8b837659bba8fb4</sc_catalog>
-        <show_in_cms>false</show_in_cms>
         <sys_class_name>sc_category</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-04-28 10:12:04</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>6dfacd53db12b600360eda11cf961944</sys_id>
         <sys_mod_count>28</sys_mod_count>
         <sys_name>Active Directory Management</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>sc_category_6dfacd53db12b600360eda11cf961944</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

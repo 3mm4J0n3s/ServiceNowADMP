@@ -10,13 +10,11 @@
         <sys_class_name>db_image</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2017-07-13 13:49:59</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>08b51177dbfbfac0360eda11cf96191d</sys_id>
         <sys_mod_count>1</sys_mod_count>
         <sys_name>manager_icon.png</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>db_image_08b51177dbfbfac0360eda11cf96191d</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

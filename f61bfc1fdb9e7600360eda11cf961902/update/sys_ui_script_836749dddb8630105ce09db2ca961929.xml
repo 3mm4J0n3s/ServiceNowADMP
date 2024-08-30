@@ -1238,13 +1238,11 @@ function deleteMidServerAndTables() {
         <sys_class_name>sys_ui_script</sys_class_name>
         <sys_created_by>admin</sys_created_by>
         <sys_created_on>2021-08-17 12:02:26</sys_created_on>
-        <sys_customer_update>false</sys_customer_update>
         <sys_id>836749dddb8630105ce09db2ca961929</sys_id>
         <sys_mod_count>532</sys_mod_count>
         <sys_name>x_manen_admanager.ADManagerConfiguration</sys_name>
         <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
         <sys_policy/>
-        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
         <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
         <sys_update_name>sys_ui_script_836749dddb8630105ce09db2ca961929</sys_update_name>
         <sys_updated_by>admin</sys_updated_by>

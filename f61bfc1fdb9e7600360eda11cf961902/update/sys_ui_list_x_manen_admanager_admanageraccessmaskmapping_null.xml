@@ -58,7 +58,6 @@
             <sys_class_name>sys_ui_list</sys_class_name>
             <sys_created_by>admin</sys_created_by>
             <sys_created_on>2021-09-09 17:55:19</sys_created_on>
-            <sys_customer_update>false</sys_customer_update>
             <sys_domain>global</sys_domain>
             <sys_domain_path>/</sys_domain_path>
             <sys_id>05ad4940dba5ef80360eda11cf9619c1</sys_id>
@@ -66,7 +65,6 @@
             <sys_name>x_manen_admanager_admanageraccessmaskmapping</sys_name>
             <sys_package display_value="ADManager Plus" source="x_manen_admanager">f61bfc1fdb9e7600360eda11cf961902</sys_package>
             <sys_policy/>
-            <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
             <sys_scope display_value="ADManager Plus">f61bfc1fdb9e7600360eda11cf961902</sys_scope>
             <sys_update_name>sys_ui_list_x_manen_admanager_admanageraccessmaskmapping_null</sys_update_name>
             <sys_updated_by>admin</sys_updated_by>

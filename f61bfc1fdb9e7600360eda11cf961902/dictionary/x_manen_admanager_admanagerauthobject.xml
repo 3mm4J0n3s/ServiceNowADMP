@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element db_object_id="fbadf013dbde7600360eda11cf96193c" label="ADManagerAuthObject" max_length="40" name="x_manen_admanager_admanagerauthobject" type="collection">
+        <element attributes="edge_encryption_enabled=true" label="Login Status" max_length="40" name="login_status" type="boolean"/>
+        <element attributes="edge_encryption_enabled=true" label="Login Id" max_length="40" name="login_id" type="integer"/>
+        <element label="ValidDate" max_length="100" name="validdate" type="string"/>
+        <element label="AuthToken" mandatory="true" max_length="255" name="authtoken" type="password2"/>
+        <element label="LoginName" max_length="255" name="loginname" type="string"/>
+        <element label="Login Status Message" max_length="1000" name="login_status_message" type="string"/>
+    </element>
+</database>
